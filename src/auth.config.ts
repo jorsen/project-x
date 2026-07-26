@@ -12,6 +12,7 @@ export const authConfig = {
       if (user) {
         token.role = user.role;
         token.id = user.id;
+        token.employeeNumber = user.employeeNumber;
       }
       return token;
     },
@@ -19,6 +20,7 @@ export const authConfig = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as "ADMIN" | "EDITOR" | "VIEWER";
+        session.user.employeeNumber = token.employeeNumber as string;
       }
       return session;
     },

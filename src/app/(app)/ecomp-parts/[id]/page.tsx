@@ -1,9 +1,12 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { canEdit } from "@/lib/authz";
 import { DeleteButton } from "@/components/ui/DeleteButton";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Field } from "@/components/ui/Field";
+import { Button, LinkButton } from "@/components/ui/Button";
+import * as t from "@/components/ui/table";
 import { deleteCustomerDemand, upsertCustomerDemand } from "../actions";
 
 export default async function EcompPartDetailPage({
@@ -23,89 +26,74 @@ export default async function EcompPartDetailPage({
 
   const upsertDemandForPart = upsertCustomerDemand.bind(null, part.id);
 
+  const fields: { label: string; value: string | number | null }[] = [
+    { label: "No.", value: part.no },
+    { label: "Part Number", value: part.partNumber },
+    { label: "Category", value: part.category },
+    { label: "ICS", value: part.ics },
+    { label: "Maker", value: part.maker },
+    { label: "Inventory Qty", value: part.inventoryQty },
+    { label: "Inventory As Of", value: part.inventoryAsOf?.toISOString().slice(0, 10) ?? null },
+  ];
+
   return (
     <div className="max-w-3xl">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-900">Ecomp Part Detail</h1>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/ecomp-parts"
-            className="text-sm font-medium text-gray-700 hover:text-gray-900"
-          >
-            Back to list
-          </Link>
-          {editable && (
-            <Link
-              href={`/ecomp-parts/${part.id}/edit`}
-              className="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800"
-            >
-              Edit
-            </Link>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Ecomp Part Detail"
+        description={part.ics}
+        actions={
+          <>
+            <LinkButton href="/ecomp-parts" variant="secondary">
+              Back to list
+            </LinkButton>
+            {editable && <LinkButton href={`/ecomp-parts/${part.id}/edit`}>Edit</LinkButton>}
+          </>
+        }
+      />
 
-      <div className="mb-6 rounded-md border border-gray-200 bg-white p-4">
-        <dl className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <dt className="font-medium text-gray-500">No.</dt>
-            <dd className="text-gray-900">{part.no}</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-gray-500">Part Number</dt>
-            <dd className="text-gray-900">{part.partNumber}</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-gray-500">Category</dt>
-            <dd className="text-gray-900">{part.category}</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-gray-500">ICS</dt>
-            <dd className="text-gray-900">{part.ics}</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-gray-500">Maker</dt>
-            <dd className="text-gray-900">{part.maker}</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-gray-500">Inventory Qty</dt>
-            <dd className="text-gray-900">{part.inventoryQty}</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-gray-500">Inventory As Of</dt>
-            <dd className="text-gray-900">{part.inventoryAsOf?.toISOString().slice(0, 10)}</dd>
-          </div>
+      <div className="mb-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          {fields.map((f) => (
+            <div key={f.label}>
+              <dt className="text-xs font-medium text-slate-500">{f.label}</dt>
+              <dd className="mt-1 text-sm text-slate-900">
+                {f.value ?? <span className="text-slate-300">—</span>}
+              </dd>
+            </div>
+          ))}
         </dl>
       </div>
 
-      <h2 className="mb-2 text-lg font-semibold text-gray-900">Customer Weekly Demand</h2>
+      <h2 className="mb-2 text-lg font-semibold text-slate-900">Customer Weekly Demand</h2>
 
-      <div className="mb-4 overflow-x-auto rounded-md border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50">
+      <div className={`mb-4 ${t.tableWrap}`}>
+        <table className={t.table}>
+          <thead className={t.thead}>
             <tr>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">Customer Code</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">Qty</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">Updated At</th>
-              {editable && <th className="px-3 py-2" />}
+              <th className={t.th}>Customer Code</th>
+              <th className={t.thNum}>Qty</th>
+              <th className={t.th}>Updated At</th>
+              {editable && <th className={t.th} />}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 bg-white">
+          <tbody className={t.tbody}>
             {part.demands.map((d) => (
-              <tr key={d.id}>
-                <td className="px-3 py-2">{d.customerCode}</td>
-                <td className="px-3 py-2">{d.qty}</td>
-                <td className="px-3 py-2">{d.updatedAt.toISOString().slice(0, 10)}</td>
+              <tr key={d.id} className={t.tr}>
+                <td className={`${t.td} font-medium text-slate-900`}>{d.customerCode}</td>
+                <td className={t.tdNum}>{d.qty ?? <span className="text-slate-300">—</span>}</td>
+                <td className={t.td}>{d.updatedAt.toISOString().slice(0, 10)}</td>
                 {editable && (
-                  <td className="whitespace-nowrap px-3 py-2 text-right">
-                    <DeleteButton action={deleteCustomerDemand.bind(null, d.id)} />
+                  <td className={t.tdActions}>
+                    <div className="flex items-center justify-end">
+                      <DeleteButton action={deleteCustomerDemand.bind(null, d.id)} />
+                    </div>
                   </td>
                 )}
               </tr>
             ))}
             {part.demands.length === 0 && (
               <tr>
-                <td colSpan={editable ? 4 : 3} className="px-3 py-2 text-center text-gray-500">
+                <td colSpan={editable ? 4 : 3} className={`${t.td} text-center text-slate-400`}>
                   No demand records yet.
                 </td>
               </tr>
@@ -115,37 +103,17 @@ export default async function EcompPartDetailPage({
       </div>
 
       {editable && (
-        <form action={upsertDemandForPart} className="flex items-end gap-3">
-          <div className="space-y-1">
-            <label htmlFor="customerCode" className="block text-sm font-medium text-gray-700">
-              Customer Code
-            </label>
-            <input
-              id="customerCode"
-              name="customerCode"
-              type="text"
-              required
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
-            />
+        <form
+          action={upsertDemandForPart}
+          className="flex items-end gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+        >
+          <div className="w-40">
+            <Field name="customerCode" label="Customer Code" required />
           </div>
-          <div className="space-y-1">
-            <label htmlFor="qty" className="block text-sm font-medium text-gray-700">
-              Qty
-            </label>
-            <input
-              id="qty"
-              name="qty"
-              type="number"
-              step="any"
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
-            />
+          <div className="w-32">
+            <Field name="qty" label="Qty" type="number" step="any" />
           </div>
-          <button
-            type="submit"
-            className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
-          >
-            Add / Update
-          </button>
+          <Button type="submit">Add / Update</Button>
         </form>
       )}
     </div>

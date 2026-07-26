@@ -33,7 +33,7 @@ export async function createJscphPart(formData: FormData) {
   }
   await prisma.jscphPart.create({ data: { ...data, code: data.code } });
   revalidatePath("/jscph-parts");
-  redirect("/jscph-parts");
+  redirect("/jscph-parts?flash=Record created");
 }
 
 export async function updateJscphPart(id: string, formData: FormData) {
@@ -47,7 +47,7 @@ export async function updateJscphPart(id: string, formData: FormData) {
     data: { ...data, code: data.code },
   });
   revalidatePath("/jscph-parts");
-  redirect("/jscph-parts");
+  redirect("/jscph-parts?flash=Record updated");
 }
 
 export async function deleteJscphPart(id: string) {

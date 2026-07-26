@@ -1,6 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Field } from "@/components/ui/Field";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
 import { updateUserRole, resetUserPassword } from "../../actions";
 
 export default async function EditUserPage({
@@ -16,7 +20,7 @@ export default async function EditUserPage({
   const { id } = await params;
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, name: true, email: true, role: true },
+    select: { id: true, name: true, employeeNumber: true, role: true },
   });
   if (!user) notFound();
 
@@ -24,63 +28,45 @@ export default async function EditUserPage({
   const resetPasswordWithId = resetUserPassword.bind(null, id);
 
   return (
-    <div className="max-w-2xl space-y-8">
-      <div>
-        <h1 className="text-xl font-semibold text-gray-900">Edit User</h1>
-        <p className="text-sm text-gray-500">
-          {user.name} &lt;{user.email}&gt;
-        </p>
-      </div>
+    <div className="max-w-2xl">
+      <PageHeader title="Edit User" description={`${user.name} (Employee #${user.employeeNumber})`} />
 
-      <div>
-        <h2 className="mb-2 text-sm font-semibold text-gray-900">Change Role</h2>
-        <form action={updateRoleWithId} className="space-y-4">
-          <div className="space-y-1">
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-              Role
-            </label>
-            <select
-              id="role"
-              name="role"
-              defaultValue={user.role}
-              className="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
-            >
-              <option value="ADMIN">ADMIN</option>
-              <option value="EDITOR">EDITOR</option>
-              <option value="VIEWER">VIEWER</option>
-            </select>
+      <div className="space-y-6">
+        <form
+          action={updateRoleWithId}
+          className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+        >
+          <h2 className="text-sm font-semibold text-slate-900">Change Role</h2>
+          <Select
+            name="role"
+            label="Role"
+            defaultValue={user.role}
+            options={[
+              { value: "ADMIN", label: "ADMIN" },
+              { value: "EDITOR", label: "EDITOR" },
+              { value: "VIEWER", label: "VIEWER" },
+            ]}
+          />
+          <div className="flex gap-3 border-t border-slate-100 pt-4">
+            <Button type="submit">Save Role</Button>
           </div>
-          <button
-            type="submit"
-            className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
-          >
-            Save Role
-          </button>
         </form>
-      </div>
 
-      <div className="border-t border-gray-200 pt-6">
-        <h2 className="mb-2 text-sm font-semibold text-gray-900">Reset Password</h2>
-        <form action={resetPasswordWithId} className="space-y-4">
-          <div className="space-y-1">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              New Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              className="w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
-            />
-            <p className="text-xs text-gray-500">Use at least 8 characters.</p>
+        <form
+          action={resetPasswordWithId}
+          className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+        >
+          <h2 className="text-sm font-semibold text-slate-900">Reset Password</h2>
+          <Field
+            name="password"
+            label="New Password"
+            type="password"
+            required
+            description="Use at least 8 characters."
+          />
+          <div className="flex gap-3 border-t border-slate-100 pt-4">
+            <Button type="submit">Reset Password</Button>
           </div>
-          <button
-            type="submit"
-            className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
-          >
-            Reset Password
-          </button>
         </form>
       </div>
     </div>

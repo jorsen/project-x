@@ -1,5 +1,9 @@
 import Link from "next/link";
+import { BarChart3 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { LinkButton } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default async function ReportsPage() {
   const groups = await prisma.computedSheetSnapshot.groupBy({
@@ -10,30 +14,31 @@ export default async function ReportsPage() {
 
   return (
     <div>
-      <div className="mb-4">
-        <h1 className="text-xl font-semibold text-gray-900">Computed Reports</h1>
-        <p className="text-sm text-gray-500">
-          Read-only, formula-derived rows imported from Excel. Select a sheet to view its rows.
-        </p>
-      </div>
+      <PageHeader
+        title="Computed Reports"
+        description="Read-only snapshots of formula-derived sheets from the last import."
+      />
 
       {groups.length === 0 ? (
-        <div className="rounded-md border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-sm text-gray-500">
-          No computed reports imported yet — use the Import page to load an Excel file.
-        </div>
+        <EmptyState
+          icon={BarChart3}
+          title="No computed reports imported yet"
+          description="Use the Import page to load an Excel file."
+          action={<LinkButton href="/import">Go to Import</LinkButton>}
+        />
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map((g) => (
             <Link
               key={`${g.sourceFile}::${g.sheetName}`}
               href={`/reports/${encodeURIComponent(g.sourceFile)}/${encodeURIComponent(g.sheetName)}`}
-              className="rounded-md border border-gray-200 bg-white p-4 hover:border-gray-400 hover:shadow-sm"
+              className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-indigo-300 hover:shadow-md"
             >
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+              <p className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
                 {g.sourceFile}
               </p>
-              <p className="mt-1 text-sm font-medium text-gray-900">{g.sheetName}</p>
-              <p className="mt-2 text-xs text-gray-500">{g._count} row(s)</p>
+              <p className="mt-1 text-sm font-medium text-slate-900">{g.sheetName}</p>
+              <p className="mt-2 text-xs text-slate-500">{g._count} row(s)</p>
             </Link>
           ))}
         </div>

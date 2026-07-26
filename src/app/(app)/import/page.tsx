@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { PageHeader } from "@/components/ui/PageHeader";
+import * as t from "@/components/ui/table";
 import { ImportForm } from "./ImportForm";
 
 export const maxDuration = 60;
@@ -11,29 +13,39 @@ export default async function ImportPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="mb-1 text-xl font-semibold text-gray-900">Import Excel</h1>
-      <p className="mb-4 text-sm text-gray-600">
-        Upload either source workbook to load or refresh its data. Existing records are matched
-        by their natural key (ICS, part code, PO number, etc.) and updated in place — records you
-        added manually through the site are never deleted by an import.
-      </p>
+      <PageHeader
+        title="Import Excel"
+        description="Upload either source workbook to load or refresh its data. Existing records are matched by their natural key (ICS, part code, PO number, etc.) and updated in place — records you added manually through the site are never deleted by an import."
+      />
 
       <ImportForm />
 
-      <h2 className="mt-8 mb-2 text-sm font-semibold text-gray-900">Recent imports</h2>
+      <h2 className="mt-8 mb-2 text-sm font-semibold text-slate-900">Recent imports</h2>
       {recentRuns.length === 0 ? (
-        <p className="text-sm text-gray-500">No imports yet.</p>
+        <p className="text-sm text-slate-500">No imports yet.</p>
       ) : (
-        <ul className="divide-y divide-gray-100 rounded-md border border-gray-200 text-sm">
-          {recentRuns.map((run) => (
-            <li key={run.id} className="px-3 py-2">
-              <span className="font-medium text-gray-800">{run.fileName}</span>{" "}
-              <span className="text-gray-500">
-                ({run.sourceFile}) — {run.importedAt.toISOString().slice(0, 19).replace("T", " ")}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <div className={t.tableWrap}>
+          <table className={t.table}>
+            <thead className={t.thead}>
+              <tr>
+                <th className={t.th}>File</th>
+                <th className={t.th}>Source</th>
+                <th className={t.th}>Imported At</th>
+              </tr>
+            </thead>
+            <tbody className={t.tbody}>
+              {recentRuns.map((run) => (
+                <tr key={run.id} className={t.tr}>
+                  <td className={`${t.td} font-medium text-slate-900`}>{run.fileName}</td>
+                  <td className={t.td}>{run.sourceFile}</td>
+                  <td className={t.tdMuted}>
+                    {run.importedAt.toISOString().slice(0, 19).replace("T", " ")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

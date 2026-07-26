@@ -1,108 +1,131 @@
 import Link from "next/link";
+import { Layers } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { canEdit } from "@/lib/authz";
 import { DeleteButton } from "@/components/ui/DeleteButton";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { LinkButton } from "@/components/ui/Button";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { FlashBanner } from "@/components/ui/FlashBanner";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Pagination, PAGE_SIZE, parseSkip } from "@/components/ui/Pagination";
+import * as t from "@/components/ui/table";
 import { deleteJscphPart } from "./actions";
 
 export default async function JscphPartsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; skip?: string; flash?: string }>;
 }) {
-  const { q } = await searchParams;
+  const { q, skip: skipParam, flash } = await searchParams;
+  const skip = parseSkip(skipParam);
   const session = await auth();
   const editable = canEdit(session?.user?.role);
 
-  const parts = await prisma.jscphPart.findMany({
-    where: q
-      ? {
-          OR: [
-            { code: { contains: q, mode: "insensitive" } },
-            { ics1: { contains: q, mode: "insensitive" } },
-            { partName: { contains: q, mode: "insensitive" } },
-            { modelName: { contains: q, mode: "insensitive" } },
-          ],
-        }
-      : undefined,
-    orderBy: { code: "asc" },
-    take: 200,
-  });
+  const where = q
+    ? {
+        OR: [
+          { code: { contains: q, mode: "insensitive" as const } },
+          { ics1: { contains: q, mode: "insensitive" as const } },
+          { partName: { contains: q, mode: "insensitive" as const } },
+          { modelName: { contains: q, mode: "insensitive" as const } },
+        ],
+      }
+    : undefined;
+
+  const [parts, total] = await Promise.all([
+    prisma.jscphPart.findMany({ where, orderBy: { code: "asc" }, skip, take: PAGE_SIZE }),
+    prisma.jscphPart.count({ where }),
+  ]);
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">JSCPH Parts</h1>
-          <p className="text-sm text-gray-500">{parts.length} record(s) shown (max 200)</p>
-        </div>
-        {editable && (
-          <Link
-            href="/jscph-parts/new"
-            className="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800"
-          >
-            New record
-          </Link>
-        )}
-      </div>
+      <PageHeader
+        title="JSCPH Parts"
+        description={`${total} record${total === 1 ? "" : "s"} total`}
+        actions={
+          editable && <LinkButton href="/jscph-parts/new">+ New record</LinkButton>
+        }
+      />
 
-      <form className="mb-4">
-        <input
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Search code, ICS1, part name, model name..."
-          className="w-full max-w-md rounded-md border border-gray-300 px-3 py-2 text-sm"
-        />
+      <FlashBanner message={flash} />
+
+      <form className="mb-4 flex gap-2">
+        <SearchInput defaultValue={q} placeholder="Search code, ICS1, part name, model name..." />
       </form>
 
-      <div className="overflow-x-auto rounded-md border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">Code</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">ICS1</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">Part Name</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">Model Name</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">SPQ</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">Unit Price Purchase</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">Unit Price Sales</th>
-              <th className="px-3 py-2" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 bg-white">
-            {parts.map((p) => (
-              <tr key={p.id}>
-                <td className="px-3 py-2">{p.code}</td>
-                <td className="px-3 py-2">{p.ics1}</td>
-                <td className="px-3 py-2">{p.partName}</td>
-                <td className="px-3 py-2">{p.modelName}</td>
-                <td className="px-3 py-2">{p.spq}</td>
-                <td className="px-3 py-2">{p.unitPricePurchase}</td>
-                <td className="px-3 py-2">{p.unitPriceSales}</td>
-                <td className="whitespace-nowrap px-3 py-2 text-right">
-                  <Link
-                    href={`/jscph-parts/${p.id}`}
-                    className="mr-3 text-sm font-medium text-gray-700 hover:text-gray-900"
-                  >
-                    View
-                  </Link>
-                  {editable && (
-                    <>
-                      <Link
-                        href={`/jscph-parts/${p.id}/edit`}
-                        className="mr-3 text-sm font-medium text-gray-700 hover:text-gray-900"
-                      >
-                        Edit
-                      </Link>
-                      <DeleteButton action={deleteJscphPart.bind(null, p.id)} />
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {parts.length === 0 ? (
+        <EmptyState
+          icon={Layers}
+          title={q ? "No matching records" : "No JSCPH parts yet"}
+          description={q ? "Try a different search term." : "Add one manually to get started."}
+        />
+      ) : (
+        <>
+          <div className={t.tableWrap}>
+            <table className={t.table}>
+              <thead className={t.thead}>
+                <tr>
+                  <th className={t.th}>Code</th>
+                  <th className={t.th}>ICS1</th>
+                  <th className={t.th}>Part Name</th>
+                  <th className={t.th}>Model Name</th>
+                  <th className={t.thNum}>SPQ</th>
+                  <th className={t.thNum}>Unit Price Purchase</th>
+                  <th className={t.thNum}>Unit Price Sales</th>
+                  <th className={t.th} />
+                </tr>
+              </thead>
+              <tbody className={t.tbody}>
+                {parts.map((p) => (
+                  <tr key={p.id} className={t.tr}>
+                    <td className={`${t.td} font-medium text-slate-900`}>{p.code}</td>
+                    <td className={t.td}>{p.ics1 ?? <span className="text-slate-300">—</span>}</td>
+                    <td className={t.td}>{p.partName ?? <span className="text-slate-300">—</span>}</td>
+                    <td className={t.td}>{p.modelName ?? <span className="text-slate-300">—</span>}</td>
+                    <td className={t.tdNum}>{p.spq ?? <span className="text-slate-300">—</span>}</td>
+                    <td className={t.tdNum}>
+                      {p.unitPricePurchase ?? <span className="text-slate-300">—</span>}
+                    </td>
+                    <td className={t.tdNum}>
+                      {p.unitPriceSales ?? <span className="text-slate-300">—</span>}
+                    </td>
+                    <td className={t.tdActions}>
+                      <div className="flex items-center justify-end gap-3">
+                        <Link
+                          href={`/jscph-parts/${p.id}`}
+                          className="text-xs font-medium text-slate-600 hover:text-indigo-600"
+                        >
+                          View
+                        </Link>
+                        {editable && (
+                          <>
+                            <Link
+                              href={`/jscph-parts/${p.id}/edit`}
+                              className="text-xs font-medium text-slate-600 hover:text-indigo-600"
+                            >
+                              Edit
+                            </Link>
+                            <DeleteButton action={deleteJscphPart.bind(null, p.id)} />
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Pagination
+            basePath="/jscph-parts"
+            searchParams={{ q }}
+            skip={skip}
+            count={parts.length}
+            total={total}
+          />
+        </>
+      )}
     </div>
   );
 }

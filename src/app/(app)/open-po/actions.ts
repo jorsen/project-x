@@ -33,7 +33,7 @@ export async function createOpenPoLine(formData: FormData) {
   validate(data);
   await prisma.openPoLine.create({ data: { ...data, ics: data.ics } });
   revalidatePath("/open-po");
-  redirect("/open-po");
+  redirect("/open-po?flash=Record created");
 }
 
 export async function updateOpenPoLine(id: string, formData: FormData) {
@@ -45,7 +45,7 @@ export async function updateOpenPoLine(id: string, formData: FormData) {
     data: { ...data, ics: data.ics },
   });
   revalidatePath("/open-po");
-  redirect("/open-po");
+  redirect("/open-po?flash=Record updated");
 }
 
 export async function deleteOpenPoLine(id: string) {

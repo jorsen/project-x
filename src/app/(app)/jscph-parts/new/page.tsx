@@ -1,11 +1,16 @@
+import { PageHeader } from "@/components/ui/PageHeader";
 import { Field } from "@/components/ui/Field";
+import { Button, LinkButton } from "@/components/ui/Button";
 import { createJscphPart } from "../actions";
 
 export default function NewJscphPartPage() {
   return (
     <div className="max-w-2xl">
-      <h1 className="mb-4 text-xl font-semibold text-gray-900">New JSCPH Part</h1>
-      <form action={createJscphPart} className="space-y-4">
+      <PageHeader title="New JSCPH Part" />
+      <form
+        action={createJscphPart}
+        className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+      >
         <div className="grid grid-cols-2 gap-4">
           <Field name="code" label="Code" required />
           <Field name="ics1" label="ICS1" />
@@ -15,12 +20,12 @@ export default function NewJscphPartPage() {
           <Field name="unitPricePurchase" label="Unit Price Purchase" type="number" step="any" />
           <Field name="unitPriceSales" label="Unit Price Sales" type="number" step="any" />
         </div>
-        <button
-          type="submit"
-          className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
-        >
-          Create
-        </button>
+        <div className="flex gap-3 border-t border-slate-100 pt-4">
+          <Button type="submit">Create</Button>
+          <LinkButton href="/jscph-parts" variant="secondary">
+            Cancel
+          </LinkButton>
+        </div>
       </form>
     </div>
   );

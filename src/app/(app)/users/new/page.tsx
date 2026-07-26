@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { Field } from "@/components/ui/Field";
+import { Select } from "@/components/ui/Select";
+import { Button, LinkButton } from "@/components/ui/Button";
 import { createUser } from "../actions";
 
 export default async function NewUserPage() {
@@ -11,44 +14,36 @@ export default async function NewUserPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="mb-4 text-xl font-semibold text-gray-900">New User</h1>
-      <form action={createUser} className="space-y-4">
+      <PageHeader title="New User" />
+      <form
+        action={createUser}
+        className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+      >
         <Field name="name" label="Name" required />
-        <Field name="email" label="Email" type="email" required />
-        <div className="space-y-1">
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
-          />
-          <p className="text-xs text-gray-500">Use at least 8 characters.</p>
+        <Field name="employeeNumber" label="Employee Number" required />
+        <Field
+          name="password"
+          label="Password"
+          type="password"
+          required
+          description="Use at least 8 characters."
+        />
+        <Select
+          name="role"
+          label="Role"
+          defaultValue="VIEWER"
+          options={[
+            { value: "ADMIN", label: "ADMIN" },
+            { value: "EDITOR", label: "EDITOR" },
+            { value: "VIEWER", label: "VIEWER" },
+          ]}
+        />
+        <div className="flex gap-3 border-t border-slate-100 pt-4">
+          <Button type="submit">Create</Button>
+          <LinkButton href="/users" variant="secondary">
+            Cancel
+          </LinkButton>
         </div>
-        <div className="space-y-1">
-          <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-            Role
-          </label>
-          <select
-            id="role"
-            name="role"
-            defaultValue="VIEWER"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
-          >
-            <option value="ADMIN">ADMIN</option>
-            <option value="EDITOR">EDITOR</option>
-            <option value="VIEWER">VIEWER</option>
-          </select>
-        </div>
-        <button
-          type="submit"
-          className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
-        >
-          Create
-        </button>
       </form>
     </div>
   );

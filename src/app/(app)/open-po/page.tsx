@@ -1,8 +1,17 @@
 import Link from "next/link";
+import { ClipboardList, Pencil } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { canEdit } from "@/lib/authz";
 import { DeleteButton } from "@/components/ui/DeleteButton";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { LinkButton } from "@/components/ui/Button";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { FlashBanner } from "@/components/ui/FlashBanner";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Pagination, PAGE_SIZE, parseSkip } from "@/components/ui/Pagination";
+import { SourceSheetBadge } from "@/components/ui/Badge";
+import * as t from "@/components/ui/table";
 import { deleteOpenPoLine } from "./actions";
 
 const TABS = [
@@ -22,126 +31,148 @@ function tabHref(q: string | undefined, source: string | undefined) {
 export default async function OpenPoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; source?: string }>;
+  searchParams: Promise<{ q?: string; source?: string; skip?: string; flash?: string }>;
 }) {
-  const { q, source } = await searchParams;
+  const { q, source, skip: skipParam, flash } = await searchParams;
+  const skip = parseSkip(skipParam);
   const session = await auth();
   const editable = canEdit(session?.user?.role);
 
   const sourceSheet = source === "SUPPLIER" || source === "AMOUNT" ? source : undefined;
 
-  const records = await prisma.openPoLine.findMany({
-    where: {
-      ...(sourceSheet ? { sourceSheet } : {}),
-      ...(q
-        ? {
-            OR: [
-              { ics: { contains: q, mode: "insensitive" } },
-              { partNumber: { contains: q, mode: "insensitive" } },
-              { category: { contains: q, mode: "insensitive" } },
-              { maker: { contains: q, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: [{ ics: "asc" }, { sourceSheet: "asc" }],
-    take: 200,
-  });
+  const where = {
+    ...(sourceSheet ? { sourceSheet } : {}),
+    ...(q
+      ? {
+          OR: [
+            { ics: { contains: q, mode: "insensitive" as const } },
+            { partNumber: { contains: q, mode: "insensitive" as const } },
+            { category: { contains: q, mode: "insensitive" as const } },
+            { maker: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
+
+  const [records, total] = await Promise.all([
+    prisma.openPoLine.findMany({
+      where,
+      orderBy: [{ ics: "asc" }, { sourceSheet: "asc" }],
+      skip,
+      take: PAGE_SIZE,
+    }),
+    prisma.openPoLine.count({ where }),
+  ]);
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">Open PO</h1>
-          <p className="text-sm text-gray-500">{records.length} record(s) shown (max 200)</p>
+      <PageHeader
+        title="Open PO Lines"
+        description={`${total} record${total === 1 ? "" : "s"} total`}
+        actions={editable && <LinkButton href="/open-po/new">+ New record</LinkButton>}
+      />
+
+      <FlashBanner message={flash} />
+
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-1">
+          {TABS.map((tab) => {
+            const active = sourceSheet === tab.value;
+            return (
+              <Link
+                key={tab.label}
+                href={tabHref(q, tab.value)}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  active ? "bg-indigo-50 text-indigo-700" : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {tab.label}
+              </Link>
+            );
+          })}
         </div>
-        {editable && (
-          <Link
-            href="/open-po/new"
-            className="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800"
-          >
-            New record
-          </Link>
-        )}
+
+        <form className="flex gap-2">
+          {sourceSheet && <input type="hidden" name="source" value={sourceSheet} />}
+          <SearchInput defaultValue={q} placeholder="Search ICS, part number, category, maker..." />
+        </form>
       </div>
 
-      <div className="mb-4 flex gap-2">
-        {TABS.map((tab) => {
-          const active = sourceSheet === tab.value;
-          return (
-            <Link
-              key={tab.label}
-              href={tabHref(q, tab.value)}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-                active
-                  ? "bg-gray-900 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              {tab.label}
-            </Link>
-          );
-        })}
-      </div>
-
-      <form className="mb-4">
-        {sourceSheet && <input type="hidden" name="source" value={sourceSheet} />}
-        <input
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Search ICS, part number, category, maker..."
-          className="w-full max-w-md rounded-md border border-gray-300 px-3 py-2 text-sm"
+      {records.length === 0 ? (
+        <EmptyState
+          icon={ClipboardList}
+          title={q || sourceSheet ? "No matching records" : "No open PO lines yet"}
+          description={
+            q || sourceSheet
+              ? "Try a different search term or filter."
+              : "Add one manually, or import the source workbook."
+          }
         />
-      </form>
-
-      <div className="overflow-x-auto rounded-md border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">Source Sheet</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">No.</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">Part Number</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">Category</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">ICS</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">Maker</th>
-              <th className="px-3 py-2 text-left font-medium text-gray-500">Unit Price</th>
-              <th className="px-3 py-2" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 bg-white">
-            {records.map((r) => (
-              <tr key={r.id}>
-                <td className="px-3 py-2">{r.sourceSheet}</td>
-                <td className="px-3 py-2">{r.no}</td>
-                <td className="px-3 py-2">{r.partNumber}</td>
-                <td className="px-3 py-2">{r.category}</td>
-                <td className="px-3 py-2">{r.ics}</td>
-                <td className="px-3 py-2">{r.maker}</td>
-                <td className="px-3 py-2">{r.unitPrice}</td>
-                <td className="whitespace-nowrap px-3 py-2 text-right">
-                  <Link
-                    href={`/open-po/${r.id}`}
-                    className="mr-3 text-sm font-medium text-gray-700 hover:text-gray-900"
-                  >
-                    View
-                  </Link>
-                  {editable && (
-                    <>
-                      <Link
-                        href={`/open-po/${r.id}/edit`}
-                        className="mr-3 text-sm font-medium text-gray-700 hover:text-gray-900"
-                      >
-                        Edit
-                      </Link>
-                      <DeleteButton action={deleteOpenPoLine.bind(null, r.id)} />
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      ) : (
+        <>
+          <div className={t.tableWrap}>
+            <table className={t.table}>
+              <thead className={t.thead}>
+                <tr>
+                  <th className={t.th}>Source Sheet</th>
+                  <th className={t.th}>No.</th>
+                  <th className={t.th}>Part Number</th>
+                  <th className={t.th}>Category</th>
+                  <th className={t.th}>ICS</th>
+                  <th className={t.th}>Maker</th>
+                  <th className={t.thNum}>Unit Price</th>
+                  <th className={t.th} />
+                </tr>
+              </thead>
+              <tbody className={t.tbody}>
+                {records.map((r) => (
+                  <tr key={r.id} className={t.tr}>
+                    <td className={t.td}>
+                      <SourceSheetBadge sourceSheet={r.sourceSheet} />
+                    </td>
+                    <td className={t.td}>{r.no ?? <span className="text-slate-300">—</span>}</td>
+                    <td className={`${t.td} font-medium text-slate-900`}>
+                      {r.partNumber ?? <span className="text-slate-300">—</span>}
+                    </td>
+                    <td className={t.td}>{r.category ?? <span className="text-slate-300">—</span>}</td>
+                    <td className={t.td}>{r.ics}</td>
+                    <td className={t.td}>{r.maker ?? <span className="text-slate-300">—</span>}</td>
+                    <td className={t.tdNum}>{r.unitPrice ?? <span className="text-slate-300">—</span>}</td>
+                    <td className={t.tdActions}>
+                      <div className="flex items-center justify-end gap-3">
+                        <Link
+                          href={`/open-po/${r.id}`}
+                          className="text-xs font-medium text-slate-600 hover:text-indigo-600"
+                        >
+                          View
+                        </Link>
+                        {editable && (
+                          <>
+                            <Link
+                              href={`/open-po/${r.id}/edit`}
+                              className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 hover:text-indigo-600"
+                            >
+                              <Pencil className="h-3.5 w-3.5" /> Edit
+                            </Link>
+                            <DeleteButton action={deleteOpenPoLine.bind(null, r.id)} />
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Pagination
+            basePath="/open-po"
+            searchParams={{ q, source }}
+            skip={skip}
+            count={records.length}
+            total={total}
+          />
+        </>
+      )}
     </div>
   );
 }

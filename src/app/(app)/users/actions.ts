@@ -22,12 +22,12 @@ export async function createUser(formData: FormData) {
   await requireAdmin();
 
   const name = parseTextInput(formData.get("name"));
-  const email = parseTextInput(formData.get("email"));
+  const employeeNumber = parseTextInput(formData.get("employeeNumber"));
   const password = String(formData.get("password") ?? "");
   const role = parseRole(formData.get("role"));
 
-  if (!name || !email) {
-    throw new Error("Name and email are required");
+  if (!name || !employeeNumber) {
+    throw new Error("Name and employee number are required");
   }
   if (!password) {
     throw new Error("Password is required");
@@ -36,11 +36,11 @@ export async function createUser(formData: FormData) {
   const passwordHash = await bcrypt.hash(password, 10);
 
   await prisma.user.create({
-    data: { name, email, passwordHash, role },
+    data: { name, employeeNumber, passwordHash, role },
   });
 
   revalidatePath("/users");
-  redirect("/users");
+  redirect("/users?flash=User created");
 }
 
 export async function updateUserRole(id: string, formData: FormData) {
@@ -54,7 +54,7 @@ export async function updateUserRole(id: string, formData: FormData) {
   });
 
   revalidatePath("/users");
-  redirect("/users");
+  redirect("/users?flash=Role updated");
 }
 
 export async function resetUserPassword(id: string, formData: FormData) {
@@ -73,7 +73,7 @@ export async function resetUserPassword(id: string, formData: FormData) {
   });
 
   revalidatePath("/users");
-  redirect("/users");
+  redirect("/users?flash=Password reset");
 }
 
 export async function deleteUser(id: string) {

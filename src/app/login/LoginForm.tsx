@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useSearchParams } from "next/navigation";
+import { LayoutDashboard, AlertCircle } from "lucide-react";
 import { loginAction } from "./actions";
 
 export function LoginForm() {
@@ -12,31 +13,34 @@ export function LoginForm() {
   return (
     <form
       action={formAction}
-      className="w-full max-w-sm space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
+      className="w-full max-w-sm space-y-5 rounded-xl border border-slate-200 bg-white p-8 shadow-lg shadow-slate-900/5"
     >
-      <div>
-        <h1 className="text-lg font-semibold text-gray-900">Sign in</h1>
-        <p className="text-sm text-gray-500">Stock &amp; Sales Tracker</p>
+      <div className="flex flex-col items-center text-center">
+        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-600">
+          <LayoutDashboard className="h-5 w-5 text-white" />
+        </div>
+        <h1 className="text-lg font-semibold text-slate-900">Stock &amp; Sales Tracker</h1>
+        <p className="text-sm text-slate-500">Sign in to continue</p>
       </div>
 
       <input type="hidden" name="callbackUrl" value={callbackUrl} />
 
       <div className="space-y-1">
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-          Email
+        <label htmlFor="employeeNumber" className="block text-sm font-medium text-slate-700">
+          Employee Number
         </label>
         <input
-          id="email"
-          name="email"
-          type="email"
+          id="employeeNumber"
+          name="employeeNumber"
+          type="text"
           required
           autoFocus
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="password" className="block text-sm font-medium text-slate-700">
           Password
         </label>
         <input
@@ -44,16 +48,21 @@ export function LoginForm() {
           name="password"
           type="password"
           required
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
       </div>
 
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state.error && (
+        <div className="flex items-center gap-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {state.error}
+        </div>
+      )}
 
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 hover:bg-gray-800"
+        className="w-full rounded-md bg-indigo-600 px-3 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-500 disabled:opacity-50"
       >
         {pending ? "Signing in..." : "Sign in"}
       </button>

@@ -32,7 +32,7 @@ export async function createReceivingRecord(formData: FormData) {
   }
   await prisma.receivingRecord.create({ data: { ...data, no: data.no, ics: data.ics } });
   revalidatePath("/receiving-report");
-  redirect("/receiving-report");
+  redirect("/receiving-report?flash=Record created");
 }
 
 export async function updateReceivingRecord(id: string, formData: FormData) {
@@ -46,7 +46,7 @@ export async function updateReceivingRecord(id: string, formData: FormData) {
     data: { ...data, no: data.no, ics: data.ics },
   });
   revalidatePath("/receiving-report");
-  redirect("/receiving-report");
+  redirect("/receiving-report?flash=Record updated");
 }
 
 export async function deleteReceivingRecord(id: string) {

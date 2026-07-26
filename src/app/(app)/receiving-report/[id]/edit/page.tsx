@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { Field } from "@/components/ui/Field";
+import { Button, LinkButton } from "@/components/ui/Button";
 import { toDateInputValue } from "@/lib/format";
 import { updateReceivingRecord } from "../../actions";
 
@@ -17,8 +19,11 @@ export default async function EditReceivingRecordPage({
 
   return (
     <div className="max-w-2xl">
-      <h1 className="mb-4 text-xl font-semibold text-gray-900">Edit Receiving Record</h1>
-      <form action={updateWithId} className="space-y-4">
+      <PageHeader title="Edit Receiving Record" description={`ICS ${record.ics}`} />
+      <form
+        action={updateWithId}
+        className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+      >
         <div className="grid grid-cols-2 gap-4">
           <Field name="no" label="No." type="number" defaultValue={record.no} required />
           <Field name="ics" label="ICS" defaultValue={record.ics} required />
@@ -40,12 +45,12 @@ export default async function EditReceivingRecordPage({
           />
         </div>
         <Field name="remarks" label="Remarks" defaultValue={record.remarks} />
-        <button
-          type="submit"
-          className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
-        >
-          Save
-        </button>
+        <div className="flex gap-3 border-t border-slate-100 pt-4">
+          <Button type="submit">Save</Button>
+          <LinkButton href="/receiving-report" variant="secondary">
+            Cancel
+          </LinkButton>
+        </div>
       </form>
     </div>
   );

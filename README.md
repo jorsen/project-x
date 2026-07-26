@@ -23,9 +23,9 @@ to rebuild specific formulas on request.
 2. Set `DATABASE_URL` in `.env` to a local or hosted Postgres instance (see below for a
    zero-install local option), and set `AUTH_SECRET` to any random string.
 3. `npx prisma db push` — applies the schema.
-4. `npm run db:seed` — creates the first `ADMIN` user (`admin@example.com` / `changeme123`
-   by default; override with `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` / `SEED_ADMIN_NAME`
-   env vars). **Change this password after first login.**
+4. `npm run db:seed` — creates the first `ADMIN` user (employee number `002`, password
+   `Pass1234` by default; override with `SEED_ADMIN_EMPLOYEE_NUMBER` / `SEED_ADMIN_PASSWORD` /
+   `SEED_ADMIN_NAME` env vars). **Change this password after first login.**
 5. `npm run dev`, then sign in at [http://localhost:3000/login](http://localhost:3000/login).
 6. Go to **Import Excel** and upload the two source workbooks to load real data.
 

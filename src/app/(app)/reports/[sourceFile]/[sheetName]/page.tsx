@@ -1,6 +1,11 @@
 import Link from "next/link";
+import { ArrowLeft, Inbox } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { LinkButton } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import * as t from "@/components/ui/table";
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -47,55 +52,43 @@ export default async function ComputedSheetPage({
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-            {sourceFile}
-          </p>
-          <h1 className="text-xl font-semibold text-gray-900">{sheetName}</h1>
-          <p className="text-sm text-gray-500">
-            {rows.length} row(s) shown{rows.length === 500 ? " (max 500)" : ""}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/reports"
-            className="text-sm font-medium text-gray-700 hover:text-gray-900"
-          >
-            Back to reports
-          </Link>
-          <a
-            href={csvHref}
-            className="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800"
-          >
+      <Link
+        href="/reports"
+        className="mb-2 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700"
+      >
+        <ArrowLeft className="h-4 w-4" /> Back to reports
+      </Link>
+      <PageHeader
+        title={sheetName}
+        description={`${sourceFile} · ${rows.length} row(s) shown${rows.length === 500 ? " (max 500)" : ""}`}
+        actions={
+          <LinkButton href={csvHref} variant="secondary">
             Export CSV
-          </a>
-        </div>
-      </div>
+          </LinkButton>
+        }
+      />
 
       {rows.length === 0 ? (
-        <div className="rounded-md border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-sm text-gray-500">
-          No rows found for this sheet.
-        </div>
+        <EmptyState icon={Inbox} title="No rows found for this sheet." />
       ) : (
-        <div className="overflow-x-auto rounded-md border border-gray-200">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
+        <div className={t.tableWrap}>
+          <table className={t.table}>
+            <thead className={t.thead}>
               <tr>
-                <th className="px-3 py-2 text-left font-medium text-gray-500">Row</th>
+                <th className={t.thNum}>Row</th>
                 {columns.map((col) => (
-                  <th key={col} className="px-3 py-2 text-left font-medium text-gray-500">
+                  <th key={col} className={t.th}>
                     {col}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 bg-white">
+            <tbody className={t.tbody}>
               {rows.map((row) => (
-                <tr key={row.id}>
-                  <td className="px-3 py-2 text-gray-500">{row.rowIndex}</td>
+                <tr key={row.id} className={t.tr}>
+                  <td className={t.tdNum}>{row.rowIndex}</td>
                   {columns.map((col) => (
-                    <td key={col} className="px-3 py-2">
+                    <td key={col} className={t.td}>
                       {cellValue(row.data, col)}
                     </td>
                   ))}

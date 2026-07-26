@@ -1,34 +1,39 @@
 "use client";
 
 import { useActionState } from "react";
+import { CheckCircle2 } from "lucide-react";
+import { Select } from "@/components/ui/Select";
+import { Button } from "@/components/ui/Button";
 import { importExcelAction, type ImportActionState } from "./actions";
 
 const initialState: ImportActionState = { error: null, summary: null, fileName: null };
+
+const fileInputClassName =
+  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm transition-shadow focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
 
 export function ImportForm() {
   const [state, formAction, pending] = useActionState(importExcelAction, initialState);
 
   return (
     <div className="space-y-6">
-      <form action={formAction} className="max-w-lg space-y-4 rounded-md border border-gray-200 p-4">
-        <div className="space-y-1">
-          <label htmlFor="sourceFile" className="block text-sm font-medium text-gray-700">
-            Which workbook is this?
-          </label>
-          <select
-            id="sourceFile"
-            name="sourceFile"
-            required
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-          >
-            <option value="ECOMP">E-Components Stock Trend</option>
-            <option value="JSCPH">JSCPH Stock Trend</option>
-          </select>
-        </div>
+      <form
+        action={formAction}
+        className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+      >
+        <Select
+          name="sourceFile"
+          label="Which workbook is this?"
+          required
+          options={[
+            { value: "ECOMP", label: "E-Components Stock Trend" },
+            { value: "JSCPH", label: "JSCPH Stock Trend" },
+          ]}
+        />
 
         <div className="space-y-1">
-          <label htmlFor="file" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="file" className="block text-sm font-medium text-slate-700">
             .xlsx file
+            <span className="ml-0.5 text-red-500">*</span>
           </label>
           <input
             id="file"
@@ -36,40 +41,46 @@ export function ImportForm() {
             type="file"
             accept=".xlsx"
             required
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            className={fileInputClassName}
           />
         </div>
 
         {state.error && <p className="text-sm text-red-600">{state.error}</p>}
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 hover:bg-gray-800"
-        >
+        <Button type="submit" disabled={pending}>
           {pending ? "Importing... this can take a minute" : "Import"}
-        </button>
+        </Button>
       </form>
 
       {state.summary && (
-        <div className="max-w-2xl rounded-md border border-green-200 bg-green-50 p-4">
-          <p className="mb-2 text-sm font-medium text-green-900">
-            Imported {state.fileName} successfully.
-          </p>
-          <div className="space-y-1 text-sm text-green-900">
+        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-900">Import complete</p>
+              <p className="text-xs text-slate-500">{state.fileName}</p>
+            </div>
+          </div>
+          <dl className="divide-y divide-slate-100 text-sm">
             {"entities" in state.summary &&
               Object.entries(state.summary.entities).map(([name, counts]) => (
-                <p key={name}>
-                  {name}: {counts.created} created, {counts.updated} updated
-                </p>
+                <div key={name} className="flex items-center justify-between py-2">
+                  <dt className="text-slate-600">{name}</dt>
+                  <dd className="font-medium text-slate-900">
+                    {counts.created} created, {counts.updated} updated
+                  </dd>
+                </div>
               ))}
             {"computedSheets" in state.summary &&
               Object.entries(state.summary.computedSheets).map(([name, count]) => (
-                <p key={name}>
-                  Report &quot;{name}&quot;: {count} rows refreshed
-                </p>
+                <div key={name} className="flex items-center justify-between py-2">
+                  <dt className="text-slate-600">Report &quot;{name}&quot;</dt>
+                  <dd className="font-medium text-slate-900">{count} rows refreshed</dd>
+                </div>
               ))}
-          </div>
+          </dl>
         </div>
       )}
     </div>

@@ -26,7 +26,7 @@ export async function createEcompPart(formData: FormData) {
   }
   await prisma.ecompPart.create({ data: { ...data, ics: data.ics } });
   revalidatePath("/ecomp-parts");
-  redirect("/ecomp-parts");
+  redirect("/ecomp-parts?flash=Record created");
 }
 
 export async function updateEcompPart(id: string, formData: FormData) {
@@ -40,7 +40,7 @@ export async function updateEcompPart(id: string, formData: FormData) {
     data: { ...data, ics: data.ics },
   });
   revalidatePath("/ecomp-parts");
-  redirect("/ecomp-parts");
+  redirect("/ecomp-parts?flash=Record updated");
 }
 
 export async function deleteEcompPart(id: string) {
