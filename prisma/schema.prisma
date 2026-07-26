@@ -1,0 +1,198 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(VIEWER)
+  createdAt    DateTime @default(now())
+}
+
+// --- E-Components Stock Trend file -----------------------------------
+
+model EcompPart {
+  id            String   @id @default(cuid())
+  no            String?
+  partNumber    String?
+  category      String?
+  ics           String   @unique
+  maker         String?
+  inventoryQty  Float?
+  inventoryAsOf DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  demands EcompCustomerDemand[]
+}
+
+model EcompCustomerDemand {
+  id           String   @id @default(cuid())
+  partId       String
+  part         EcompPart @relation(fields: [partId], references: [id], onDelete: Cascade)
+  customerCode String
+  qty          Float?
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([partId, customerCode])
+}
+
+model ReceivingRecord {
+  id        String    @id @default(cuid())
+  no        Int       @unique
+  ics       String
+  partName  String?
+  supplier  String?
+  maker     String?
+  commodity String?
+  price     Float?
+  poNumber  String?
+  etd       DateTime?
+  eta       DateTime?
+  qty       Float?
+  inTransit Float?
+  remarks   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model OpenPoLine {
+  id          String   @id @default(cuid())
+  sourceSheet String   // "SUPPLIER" | "AMOUNT"
+  no          String?
+  partNumber  String?
+  category    String?
+  ics         String
+  maker       String?
+  unitPrice   Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  demands OpenPoCustomerDemand[]
+
+  @@unique([sourceSheet, ics])
+}
+
+model OpenPoCustomerDemand {
+  id           String     @id @default(cuid())
+  lineId       String
+  line         OpenPoLine @relation(fields: [lineId], references: [id], onDelete: Cascade)
+  customerCode String
+  qty          Float?
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([lineId, customerCode])
+}
+
+// --- JSCPH Stock Trend file -------------------------------------------
+
+model JscphPart {
+  id                String   @id @default(cuid())
+  code              String   @unique
+  ics1              String?
+  partName          String?
+  modelName         String?
+  spq               Float?
+  unitPricePurchase Float?
+  unitPriceSales    Float?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  poPriceEntries         PoPriceEntry[]
+  monthlyForecastUsages  MonthlyForecastUsage[]
+  dailyDeliveryQtys      DailyDeliveryQty[]
+  monthlyBufferOverrides MonthlyBufferOverride[]
+  deliveryAdjustment     DeliveryAdjustment?
+}
+
+model PoPriceEntry {
+  id        String    @id @default(cuid())
+  partId    String
+  part      JscphPart @relation(fields: [partId], references: [id], onDelete: Cascade)
+  poNumber  String
+  qty       Float?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([partId, poNumber])
+}
+
+model MonthlyForecastUsage {
+  id        String    @id @default(cuid())
+  partId    String
+  part      JscphPart @relation(fields: [partId], references: [id], onDelete: Cascade)
+  month     DateTime
+  usageQty  Float?
+  updatedAt DateTime  @updatedAt
+
+  @@unique([partId, month])
+}
+
+model DailyDeliveryQty {
+  id        String    @id @default(cuid())
+  partId    String
+  part      JscphPart @relation(fields: [partId], references: [id], onDelete: Cascade)
+  date      DateTime
+  qty       Float?
+  updatedAt DateTime  @updatedAt
+
+  @@unique([partId, date])
+}
+
+model MonthlyBufferOverride {
+  id        String    @id @default(cuid())
+  partId    String
+  part      JscphPart @relation(fields: [partId], references: [id], onDelete: Cascade)
+  month     DateTime
+  bufferQty Float?
+  updatedAt DateTime  @updatedAt
+
+  @@unique([partId, month])
+}
+
+model DeliveryAdjustment {
+  id        String    @id @default(cuid())
+  partId    String    @unique
+  part      JscphPart @relation(fields: [partId], references: [id], onDelete: Cascade)
+  boh       Float?
+  incomingA Float?
+  incomingB Float?
+  updatedAt DateTime  @updatedAt
+}
+
+// --- Computed / formula-derived sheets (read-only reports) ------------
+
+model ComputedSheetSnapshot {
+  id         String   @id @default(cuid())
+  sourceFile String   // "ECOMP" | "JSCPH"
+  sheetName  String
+  rowIndex   Int
+  data       Json
+  importedAt DateTime @default(now())
+
+  @@index([sourceFile, sheetName])
+}
+
+model ImportRun {
+  id         String   @id @default(cuid())
+  sourceFile String   // "ECOMP" | "JSCPH"
+  fileName   String
+  summary    Json
+  importedAt DateTime @default(now())
+}
