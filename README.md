@@ -42,15 +42,14 @@ development.
 2. In the Vercel project's environment variables, set:
    - `DATABASE_URL` — the Neon connection string
    - `AUTH_SECRET` — a random secret (e.g. `openssl rand -base64 32`)
-3. Deploy. The build runs `prisma generate` automatically (`postinstall` +
-   `build` scripts).
-4. One-time setup against the Neon database (run locally with `DATABASE_URL`
-   pointed at Neon, or via `vercel env pull` first):
-   ```bash
-   npm run db:deploy   # applies prisma/migrations
-   npm run db:seed     # creates the first ADMIN user
-   ```
-5. Log in, change the seeded admin password (Users → your account → reset
+3. Deploy. The build (`npm run build`) automatically runs, in order:
+   `prisma generate` → `prisma migrate deploy` (applies `prisma/migrations`
+   against `DATABASE_URL`) → `prisma/seed.ts` (idempotent — creates the first
+   `ADMIN` user, employee number `002` / password `Pass1234` by default, and
+   does nothing if that employee number already exists) → `next build`. No
+   manual database step is needed; every deploy keeps the schema and seed
+   admin account up to date on its own.
+4. Log in, change the seeded admin password (Users → your account → reset
    password), and create real accounts for other users.
 
 ## Data model notes
