@@ -43,6 +43,28 @@ export function toDate(value: unknown): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+/** Finds a header cell matching `label` (case-insensitive) and returns its
+ * column index. Some sheets have extra scratch/helper columns past the real
+ * table (with their own header text, so they don't fall back to a blank
+ * "colN" label and get silently trimmed) — this lets an importer stop the
+ * computed-report snapshot at the last column that's actually part of the
+ * table, by name, instead of trusting the worksheet's raw column count. */
+export function findHeaderColumn(
+  worksheet: ExcelJS.Worksheet,
+  headerRow: number,
+  label: string,
+): number | null {
+  const row = worksheet.getRow(headerRow);
+  const target = label.trim().toLowerCase();
+  for (let col = 1; col <= worksheet.columnCount; col++) {
+    const value = cellValue(row.getCell(col));
+    if (typeof value === "string" && value.trim().toLowerCase() === target) {
+      return col;
+    }
+  }
+  return null;
+}
+
 /** Strips null/undefined keys so a Prisma `update` only touches fields that
  * actually have a new value, letting repeated imports from different sheets
  * progressively enrich a shared record without clobbering existing data. */

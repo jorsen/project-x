@@ -1,6 +1,15 @@
 import type ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
-import { cellValue, toStr, toNum, toDate, compact, emptyCounts, type ImportCounts } from "./utils";
+import {
+  cellValue,
+  toStr,
+  toNum,
+  toDate,
+  compact,
+  emptyCounts,
+  findHeaderColumn,
+  type ImportCounts,
+} from "./utils";
 import { importComputedSheet } from "./computed";
 import { crossedIntoNegative, notifyNegativeStockBatch, type NegativeStockItem } from "@/lib/discord";
 
@@ -332,7 +341,13 @@ export async function importJscphWorkbook(workbook: ExcelJS.Workbook, referenceY
     worksheet: tblDeliveryQuantity,
     headerRow: 3,
     dataStartRow: 4,
-    maxCol: tblDeliveryQuantity.columnCount,
+    // The sheet's real table ends at "Inventory" — everything past that
+    // (PO - DS, ES - NextMonth, Stock Ratio, SEP DS TTL, DIFF, and blank
+    // spacer columns) is scratch/helper content, not part of the report.
+    // Located by header text rather than a fixed column number since the
+    // date column count (and so Inventory's position) shifts with the
+    // number of days in the month.
+    maxCol: findHeaderColumn(tblDeliveryQuantity, 3, "Inventory") ?? tblDeliveryQuantity.columnCount,
   });
   computedSheets["SEP FCT"] = await importComputedSheet({
     sourceFile: "JSCPH",
