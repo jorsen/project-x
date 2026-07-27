@@ -8,8 +8,9 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { LinkButton } from "@/components/ui/Button";
 import { FlashBanner } from "@/components/ui/FlashBanner";
 import { RoleBadge } from "@/components/ui/Badge";
+import { WipeAllDataButton } from "@/components/ui/WipeAllDataButton";
 import * as t from "@/components/ui/table";
-import { deleteUser } from "./actions";
+import { deleteUser, wipeAllData } from "./actions";
 
 export default async function UsersPage({
   searchParams,
@@ -77,6 +78,15 @@ export default async function UsersPage({
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="mt-8 rounded-lg border border-red-200 bg-red-50 p-4 sm:p-6">
+        <h2 className="text-sm font-semibold text-red-900">Danger zone</h2>
+        <p className="mt-1 mb-4 text-sm text-red-700">
+          Permanently deletes every record in every table except Users — parts, PO/forecast/delivery
+          data, computed reports, and the activity log. User accounts are kept. This cannot be undone.
+        </p>
+        <WipeAllDataButton action={wipeAllData} />
       </div>
     </div>
   );

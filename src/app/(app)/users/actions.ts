@@ -9,6 +9,30 @@ import { requireAdmin, type Role } from "@/lib/authz";
 import { parseTextInput } from "@/lib/format";
 import { logActivity, diffFields } from "@/lib/activity";
 
+// Order matters here even though the schema's FKs already cascade — deleting
+// each JscphPart/EcompPart/OpenPoLine child table explicitly first (rather
+// than relying on cascade) keeps this list an accurate, self-documenting
+// inventory of every table a full reset touches.
+async function deleteAllExceptUsers() {
+  await prisma.$transaction([
+    prisma.poPriceEntry.deleteMany(),
+    prisma.monthlyForecastUsage.deleteMany(),
+    prisma.dailyDeliveryQty.deleteMany(),
+    prisma.monthlyBufferOverride.deleteMany(),
+    prisma.deliveryAdjustment.deleteMany(),
+    prisma.ecompCustomerDemand.deleteMany(),
+    prisma.openPoCustomerDemand.deleteMany(),
+    prisma.jscphPart.deleteMany(),
+    prisma.ecompPart.deleteMany(),
+    prisma.openPoLine.deleteMany(),
+    prisma.receivingRecord.deleteMany(),
+    prisma.product.deleteMany(),
+    prisma.computedSheetSnapshot.deleteMany(),
+    prisma.importRun.deleteMany(),
+    prisma.activityLog.deleteMany(),
+  ]);
+}
+
 const ROLES: Role[] = ["ADMIN", "VIEWER"];
 // Deliberately excludes passwordHash — never record password data in the
 // activity log, even hashed.
@@ -114,4 +138,31 @@ export async function deleteUser(id: string) {
     changes: diffFields(user, null, USER_FIELDS),
   });
   revalidatePath("/users");
+}
+
+// Wipes every table except User — parts, PO/forecast/delivery data, computed
+// report snapshots, import history, and the activity log itself. Logging the
+// wipe happens after ActivityLog is cleared, so it's the first entry in the
+// fresh log rather than something the wipe immediately erases.
+export async function wipeAllData() {
+  await requireAdmin();
+
+  await deleteAllExceptUsers();
+
+  await logActivity({
+    action: "DELETE",
+    entityType: "System",
+    entityLabel: "Full data reset — all records cleared except users",
+  });
+
+  revalidatePath("/");
+  revalidatePath("/reports");
+  revalidatePath("/ecomp-parts");
+  revalidatePath("/receiving-report");
+  revalidatePath("/open-po");
+  revalidatePath("/jscph-parts");
+  revalidatePath("/additional-options");
+  revalidatePath("/activity");
+  revalidatePath("/import");
+  redirect("/users?flash=All data cleared (users kept)");
 }
