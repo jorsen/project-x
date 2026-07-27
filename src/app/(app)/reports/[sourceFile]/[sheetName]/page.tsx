@@ -74,6 +74,80 @@ function withParams(
 
 const CODE_COLUMN = "CODE";
 
+// --- Forecast_CALQ is a bespoke case: it has a CODE column like
+// tblDelivery_Quantity but no daily date columns — its "detail" data is 7
+// months of Usage/Buffer/Order, Incoming Quantities, Monthly BOH, and Sales
+// Performance instead. The source sheet repeats identical sub-headers
+// (USAGE/BUFFER/ORDER, JUL END..JAN END) for every month/section, so the
+// computed-report importer's column-label de-duplication appends the
+// column number to every repeat after the first — these keys are exact
+// column-position lookups into that fixed, known layout (headerRow 3),
+// not derived generically, and would need updating if the sheet's month
+// range or column layout ever changes.
+const FORECAST_IDENTITY_COLUMNS = ["CODE", "ICS1", "PART NAME", "Model Name", "SPQ"];
+const FORECAST_MONTH_LABELS = [
+  "Jul '26",
+  "Aug '26",
+  "Sep '26",
+  "Oct '26",
+  "Nov '26",
+  "Dec '26",
+  "Jan '27",
+];
+const FORECAST_USAGE_KEYS = [
+  "USAGE",
+  "USAGE (9)",
+  "USAGE (12)",
+  "USAGE (15)",
+  "USAGE (18)",
+  "USAGE (21)",
+  "USAGE (24)",
+];
+const FORECAST_BUFFER_KEYS = [
+  "BUFFER",
+  "BUFFER (10)",
+  "BUFFER (13)",
+  "BUFFER (16)",
+  "BUFFER (19)",
+  "BUFFER (22)",
+  "BUFFER (25)",
+];
+const FORECAST_ORDER_KEYS = [
+  "ORDER",
+  "ORDER (11)",
+  "ORDER (14)",
+  "ORDER (17)",
+  "ORDER (20)",
+  "ORDER (23)",
+  "ORDER (26)",
+];
+const FORECAST_INCOMING_KEYS = [
+  "Jun '26",
+  "Jul '26",
+  "Aug '26",
+  "Sep '26",
+  "Oct '26",
+  "Nov '26",
+];
+const FORECAST_BOH_KEYS = [
+  "JUL END",
+  "AUG END",
+  "SEP END",
+  "OCT END",
+  "NOV END",
+  "DEC END",
+  "JAN END",
+];
+const FORECAST_SALES_KEYS = [
+  "JUL END (44)",
+  "AUG END (45)",
+  "SEP END (46)",
+  "OCT END (47)",
+  "NOV END (48)",
+  "DEC END (49)",
+  "JAN END (50)",
+];
+
 export default async function ComputedSheetPage({
   params,
   searchParams,
@@ -107,27 +181,38 @@ export default async function ComputedSheetPage({
   const columns = deriveColumns(allRows);
   const dateColumns = columns.filter(isDateColumn).sort();
   const hasCalendar = dateColumns.length > 0;
+  const isForecastCalq = sheetName === "Forecast_CALQ";
+  // Whether this sheet has *some* per-part drill-down to show after picking
+  // a category — either the generic day calendar, or Forecast_CALQ's bespoke
+  // monthly detail view.
+  const hasDetail = hasCalendar || isForecastCalq;
 
   // allRows is ordered by rowIndex, so this naturally preserves the sheet's
   // own block order (IP, then R, then EC) rather than sorting alphabetically.
   const categories = columns.includes(CODE_COLUMN)
     ? [...new Set(allRows.map((r) => cellValue(r.data, CODE_COLUMN)).filter(Boolean))]
     : [];
-  const hasCategory = hasCalendar && categories.length > 0;
+  const hasCategory = hasDetail && categories.length > 0;
 
-  // Category-enabled sheets (CODE + dates) skip Table/Calendar as separate
-  // modes entirely — By Category is the whole experience, and Calendar is
-  // reached only by clicking a part name from that list, not a top-level tab.
+  // Category-enabled sheets (CODE + a drill-down) skip Table/Calendar as
+  // separate modes entirely — By Category is the whole experience, and the
+  // detail view is reached only by clicking a part name from that list, not
+  // a top-level tab.
   const view = hasCategory
-    ? viewParam === "calendar" && hasCalendar
+    ? viewParam === "calendar" && hasDetail
       ? "calendar"
       : "category"
     : viewParam === "calendar" && hasCalendar
       ? "calendar"
       : "table";
-  // Once a report has a Calendar view, the daily values live there —
-  // the flat table only needs the identity/summary columns to stay readable.
-  const tableColumns = hasCalendar ? columns.filter((c) => !isDateColumn(c)) : columns;
+  // Once a report has a detail drill-down, the day/month figures live
+  // there — the flat table only needs the identity/summary columns to stay
+  // readable.
+  const tableColumns = isForecastCalq
+    ? columns.filter((c) => FORECAST_IDENTITY_COLUMNS.includes(c))
+    : hasCalendar
+      ? columns.filter((c) => !isDateColumn(c))
+      : columns;
 
   const csvHref = `/api/reports/${encodeURIComponent(sourceFile)}/${encodeURIComponent(sheetName)}/csv`;
   const baseParams = { q, row: rowParam, month: monthParam, category: categoryParam };
@@ -186,13 +271,20 @@ export default async function ComputedSheetPage({
         <EmptyState icon={Inbox} title="No rows found for this sheet." />
       ) : rows.length === 0 ? (
         <EmptyState icon={Inbox} title="No rows match your search." />
-      ) : view === "calendar" ? (
+      ) : view === "calendar" && hasCalendar ? (
         <CalendarView
           rows={rows}
           columns={columns}
           dateColumns={dateColumns}
           rowParam={rowParam}
           monthParam={monthParam}
+          baseParams={{ ...baseParams, view: "calendar" }}
+        />
+      ) : view === "calendar" && isForecastCalq ? (
+        <ForecastDetailView
+          rows={rows}
+          columns={columns}
+          rowParam={rowParam}
           baseParams={{ ...baseParams, view: "calendar" }}
         />
       ) : view === "category" ? (
@@ -523,6 +615,159 @@ function CategoryView({
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+function fmt(value: number | null): string {
+  return value === null ? "—" : Math.round(value).toLocaleString();
+}
+
+function ForecastDetailView({
+  rows,
+  columns,
+  rowParam,
+  baseParams,
+}: {
+  rows: { id: string; rowIndex: number; data: Prisma.JsonValue }[];
+  columns: string[];
+  rowParam: string | undefined;
+  baseParams: Record<string, string | undefined>;
+}) {
+  const options = rows.map((r) => ({
+    value: r.id,
+    label: rowLabel(isPlainObject(r.data) ? r.data : {}, columns, r.rowIndex),
+  }));
+  const selectedRow = rows.find((r) => r.id === rowParam) ?? rows[0];
+  const stock = numericCellValue(selectedRow.data, "STOCK");
+
+  return (
+    <div className="space-y-6">
+      {baseParams.category && (
+        <Link
+          href={withParams(baseParams, { view: "category", row: undefined })}
+          className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-slate-700"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to {baseParams.category} parts
+        </Link>
+      )}
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">Part</label>
+        <RowSelect options={options} />
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+        <h3 className="mb-4 text-sm font-semibold text-slate-900">Monthly Usage / Buffer / Order</h3>
+        <div className={t.tableWrap}>
+          <table className={t.table}>
+            <thead className={t.thead}>
+              <tr>
+                <th className={t.th}>Month</th>
+                <th className={t.thNum}>Usage</th>
+                <th className={t.thNum}>Buffer</th>
+                <th className={t.thNum}>Order</th>
+              </tr>
+            </thead>
+            <tbody className={t.tbody}>
+              {FORECAST_MONTH_LABELS.map((month, i) => (
+                <tr key={month} className={t.tr}>
+                  <td className={`${t.td} font-medium text-slate-900`}>{month}</td>
+                  <td className={t.tdNum}>
+                    {fmt(numericCellValue(selectedRow.data, FORECAST_USAGE_KEYS[i]))}
+                  </td>
+                  <td className={t.tdNum}>
+                    {fmt(numericCellValue(selectedRow.data, FORECAST_BUFFER_KEYS[i]))}
+                  </td>
+                  <td className={t.tdNum}>
+                    {fmt(numericCellValue(selectedRow.data, FORECAST_ORDER_KEYS[i]))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+        <h3 className="mb-4 text-sm font-semibold text-slate-900">Incoming Quantities</h3>
+        <div className={t.tableWrap}>
+          <table className={t.table}>
+            <thead className={t.thead}>
+              <tr>
+                <th className={t.th}>Stock</th>
+                {FORECAST_INCOMING_KEYS.map((k) => (
+                  <th key={k} className={t.thNum}>
+                    {k}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className={t.tbody}>
+              <tr className={t.tr}>
+                <td className={`${t.td} font-medium text-slate-900`}>{fmt(stock)}</td>
+                {FORECAST_INCOMING_KEYS.map((k) => (
+                  <td key={k} className={t.tdNum}>
+                    {fmt(numericCellValue(selectedRow.data, k))}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+        <h3 className="mb-4 text-sm font-semibold text-slate-900">Monthly BOH Quantity</h3>
+        <div className={t.tableWrap}>
+          <table className={t.table}>
+            <thead className={t.thead}>
+              <tr>
+                {FORECAST_BOH_KEYS.map((k) => (
+                  <th key={k} className={t.thNum}>
+                    {k}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className={t.tbody}>
+              <tr className={t.tr}>
+                {FORECAST_BOH_KEYS.map((k) => (
+                  <td key={k} className={t.tdNum}>
+                    {fmt(numericCellValue(selectedRow.data, k))}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+        <h3 className="mb-4 text-sm font-semibold text-slate-900">Sales Performance</h3>
+        <div className={t.tableWrap}>
+          <table className={t.table}>
+            <thead className={t.thead}>
+              <tr>
+                {FORECAST_BOH_KEYS.map((k) => (
+                  <th key={k} className={t.thNum}>
+                    {k}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className={t.tbody}>
+              <tr className={t.tr}>
+                {FORECAST_SALES_KEYS.map((k) => (
+                  <td key={k} className={t.tdNum}>
+                    {fmt(numericCellValue(selectedRow.data, k))}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
