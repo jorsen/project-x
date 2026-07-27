@@ -51,6 +51,11 @@ export function AppShell({
     });
   }
 
+  // Collapsed only ever narrows the *desktop* (md+) sidebar to an icon rail —
+  // every "hide at collapse" class below is md:-scoped so the mobile drawer
+  // (a separate `open` state) always still shows full labels when opened.
+  const hideWhenCollapsed = collapsed ? "md:hidden" : "";
+
   return (
     <div className="min-h-screen bg-slate-50 md:flex">
       <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 md:hidden">
@@ -79,26 +84,41 @@ export function AppShell({
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] shrink-0 flex-col border-r border-slate-200 bg-white transition-transform duration-200 ease-in-out md:static md:w-64 md:max-w-none md:translate-x-0 ${
-          open ? "translate-x-0" : "-translate-x-full"
-        } ${collapsed ? "md:hidden" : ""}`}
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] shrink-0 flex-col border-r border-slate-200 bg-white transition-transform duration-200 ease-in-out md:static md:max-w-none md:translate-x-0 ${
+          collapsed ? "md:w-16" : "md:w-64"
+        } ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80" onClick={close}>
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-600">
+        <div
+          className={`flex items-center border-b border-slate-200 px-4 py-4 ${
+            collapsed ? "md:flex-col md:gap-3 md:px-2" : "justify-between"
+          }`}
+        >
+          <Link
+            href="/"
+            className="flex items-center gap-2 hover:opacity-80"
+            onClick={close}
+            title={collapsed ? "Stock & Sales Tracker" : undefined}
+          >
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-indigo-600">
               <LayoutDashboard className="h-4 w-4 text-white" />
             </div>
-            <span className="text-sm font-semibold text-slate-900">Stock &amp; Sales Tracker</span>
+            <span className={`text-sm font-semibold text-slate-900 ${hideWhenCollapsed}`}>
+              Stock &amp; Sales Tracker
+            </span>
           </Link>
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={toggleCollapsed}
               className="hidden rounded-md p-1 text-slate-400 hover:bg-slate-100 md:block"
-              aria-label="Hide sidebar"
-              title="Hide sidebar"
+              aria-label={collapsed ? "Show full sidebar" : "Collapse sidebar to icons"}
+              title={collapsed ? "Show full sidebar" : "Collapse sidebar to icons"}
             >
-              <PanelLeftClose className="h-4 w-4" />
+              {collapsed ? (
+                <PanelLeftOpen className="h-4 w-4" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4" />
+              )}
             </button>
             <button
               type="button"
@@ -117,13 +137,20 @@ export function AppShell({
             if (items.length === 0) return null;
             return (
               <div key={section.heading}>
-                <p className="mb-1 px-2.5 text-xs font-semibold tracking-wide text-slate-400 uppercase">
+                <p
+                  className={`mb-1 px-2.5 text-xs font-semibold tracking-wide text-slate-400 uppercase ${hideWhenCollapsed}`}
+                >
                   {section.heading}
                 </p>
                 <ul className="space-y-0.5" onClick={close}>
                   {items.map((item) => (
                     <li key={item.href}>
-                      <NavLink href={item.href} label={item.label} icon={item.icon} />
+                      <NavLink
+                        href={item.href}
+                        label={item.label}
+                        icon={item.icon}
+                        collapsed={collapsed}
+                      />
                     </li>
                   ))}
                 </ul>
@@ -133,11 +160,18 @@ export function AppShell({
         </nav>
 
         <div className="border-t border-slate-200 p-3">
-          <div className="flex items-center gap-2.5 rounded-md px-1 py-1">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
+          <div
+            className={`flex items-center gap-2.5 rounded-md px-1 py-1 ${
+              collapsed ? "md:flex-col md:gap-2" : ""
+            }`}
+          >
+            <div
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700"
+              title={collapsed ? identity : undefined}
+            >
               {initials(identity)}
             </div>
-            <div className="min-w-0 flex-1">
+            <div className={`min-w-0 flex-1 ${hideWhenCollapsed}`}>
               <p className="truncate text-sm font-medium text-slate-800">{identity}</p>
               {role && <RoleBadge role={role} />}
             </div>
@@ -155,17 +189,6 @@ export function AppShell({
       </aside>
 
       <main className="min-w-0 flex-1 overflow-x-auto p-4 sm:p-6 md:p-8">
-        {collapsed && (
-          <button
-            type="button"
-            onClick={toggleCollapsed}
-            className="mb-4 hidden items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-600 shadow-sm hover:bg-slate-50 md:inline-flex"
-            aria-label="Show sidebar"
-            title="Show sidebar"
-          >
-            <PanelLeftOpen className="h-4 w-4" /> Show sidebar
-          </button>
-        )}
         <div className="mx-auto max-w-[1600px]">{children}</div>
       </main>
     </div>
