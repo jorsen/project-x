@@ -81,7 +81,12 @@ export default async function ComputedSheetPage({
   params: Promise<{ sourceFile: string; sheetName: string }>;
   searchParams: Promise<{ q?: string; view?: string; row?: string; month?: string; category?: string }>;
 }) {
-  const { sourceFile, sheetName } = await params;
+  const { sourceFile: rawSourceFile, sheetName: rawSheetName } = await params;
+  // Sheet names with spaces (SEP DS, SEP FCT, STOCK RATIO RESIN, ...) arrive
+  // still percent-encoded here rather than auto-decoded, so the raw segment
+  // never matched anything in the database — decode explicitly.
+  const sourceFile = decodeURIComponent(rawSourceFile);
+  const sheetName = decodeURIComponent(rawSheetName);
   const {
     q,
     view: viewParam,

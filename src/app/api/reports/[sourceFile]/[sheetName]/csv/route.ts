@@ -43,7 +43,11 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ sourceFile: string; sheetName: string }> },
 ) {
-  const { sourceFile, sheetName } = await params;
+  const { sourceFile: rawSourceFile, sheetName: rawSheetName } = await params;
+  // Sheet names with spaces (SEP DS, SEP FCT, STOCK RATIO RESIN, ...) arrive
+  // still percent-encoded here rather than auto-decoded — decode explicitly.
+  const sourceFile = decodeURIComponent(rawSourceFile);
+  const sheetName = decodeURIComponent(rawSheetName);
 
   const rows = await prisma.computedSheetSnapshot.findMany({
     where: { sourceFile, sheetName },
