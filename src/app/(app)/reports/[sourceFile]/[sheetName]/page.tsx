@@ -196,8 +196,7 @@ export default async function ComputedSheetPage({
       ) : view === "category" ? (
         <CategoryView
           rows={rows}
-          columns={columns}
-          dateColumns={dateColumns}
+          tableColumns={tableColumns}
           categories={categories}
           categoryParam={categoryParam}
           baseParams={{ ...baseParams, view: "category" }}
@@ -371,40 +370,55 @@ function CalendarView({
   );
 }
 
+const PART_NAME_CANDIDATES = ["PART NAME", "ITEM NAME"];
+
 function CategoryView({
   rows,
-  columns,
-  dateColumns,
+  tableColumns,
   categories,
   categoryParam,
   baseParams,
 }: {
   rows: { id: string; rowIndex: number; data: Prisma.JsonValue }[];
-  columns: string[];
-  dateColumns: string[];
+  tableColumns: string[];
   categories: string[];
   categoryParam: string | undefined;
   baseParams: Record<string, string | undefined>;
 }) {
   const selectedCategory =
-    categoryParam && categories.includes(categoryParam) ? categoryParam : categories[0];
+    categoryParam && categories.includes(categoryParam) ? categoryParam : undefined;
+
+  // At a glance: just the 3 categories with counts — pick one to see records.
+  if (!selectedCategory) {
+    return (
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {categories.map((c) => {
+          const count = rows.filter((r) => cellValue(r.data, CODE_COLUMN) === c).length;
+          return (
+            <Link
+              key={c}
+              href={withParams(baseParams, { category: c })}
+              className="rounded-lg border border-slate-200 bg-white p-6 text-center shadow-sm transition-all hover:border-indigo-300 hover:shadow-md"
+            >
+              <p className="text-2xl font-bold text-indigo-600">{c}</p>
+              <p className="mt-1 text-sm text-slate-500">
+                {count} part{count === 1 ? "" : "s"}
+              </p>
+            </Link>
+          );
+        })}
+      </div>
+    );
+  }
 
   const categoryRows = rows.filter((r) => cellValue(r.data, CODE_COLUMN) === selectedCategory);
-
-  // Sum each date column across every row in this category — verified
-  // against the workbook's own SubTotal row for this exact breakdown.
-  const subtotals = new Map<string, number>();
-  for (const col of dateColumns) {
-    let sum = 0;
-    for (const row of categoryRows) {
-      sum += numericCellValue(row.data, col) ?? 0;
-    }
-    subtotals.set(col, sum);
-  }
+  const partNameColumn = tableColumns.find((c) =>
+    PART_NAME_CANDIDATES.includes(c.trim().toUpperCase()),
+  );
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {categories.map((c) => (
           <Link
             key={c}
@@ -418,6 +432,12 @@ function CategoryView({
             {c}
           </Link>
         ))}
+        <Link
+          href={withParams(baseParams, { category: undefined })}
+          className="ml-auto text-sm font-medium text-slate-500 hover:text-slate-700"
+        >
+          ← Back to categories
+        </Link>
       </div>
 
       {categoryRows.length === 0 ? (
@@ -428,7 +448,7 @@ function CategoryView({
             <thead className={t.thead}>
               <tr>
                 <th className={t.thNum}>Row</th>
-                {columns.map((col) => (
+                {tableColumns.map((col) => (
                   <th key={col} className={t.th}>
                     {col}
                   </th>
@@ -439,17 +459,17 @@ function CategoryView({
               {categoryRows.map((row) => (
                 <tr key={row.id} className={t.tr}>
                   <td className={t.tdNum}>{row.rowIndex}</td>
-                  {columns.map((col) =>
-                    isDateColumn(col) ? (
+                  {tableColumns.map((col) =>
+                    col === partNameColumn ? (
                       <td key={col} className={`${t.td} p-0`}>
                         <Link
                           href={withParams(baseParams, {
                             view: "calendar",
                             row: row.id,
-                            month: monthKeyOf(col),
+                            category: undefined,
                           })}
-                          className="block px-4 py-2.5 hover:bg-indigo-50 hover:underline"
-                          title={`View ${col} on the calendar for this part`}
+                          className="block px-4 py-2.5 font-medium text-indigo-600 hover:underline"
+                          title="View this part's delivery calendar"
                         >
                           {cellValue(row.data, col)}
                         </Link>
@@ -463,16 +483,6 @@ function CategoryView({
                 </tr>
               ))}
             </tbody>
-            <tfoot>
-              <tr className="border-t-2 border-slate-300 bg-slate-50 font-semibold">
-                <td className={t.tdNum}>—</td>
-                {columns.map((col) => (
-                  <td key={col} className={t.td}>
-                    {subtotals.has(col) ? subtotals.get(col) : ""}
-                  </td>
-                ))}
-              </tr>
-            </tfoot>
           </table>
         </div>
       )}
