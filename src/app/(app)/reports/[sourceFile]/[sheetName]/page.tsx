@@ -10,9 +10,6 @@ import { RowSelect } from "@/components/ui/RowSelect";
 import * as t from "@/components/ui/table";
 import {
   isDateColumn,
-  isWeekend,
-  weekdayAbbr,
-  shortDate,
   monthKeyOf,
   shiftMonth,
   monthLabel,
@@ -98,6 +95,9 @@ export default async function ComputedSheetPage({
   const dateColumns = columns.filter(isDateColumn).sort();
   const hasCalendar = dateColumns.length > 0;
   const view = viewParam === "calendar" && hasCalendar ? "calendar" : "table";
+  // Once a report has a Calendar view, the daily values live there —
+  // the flat table only needs the identity/summary columns to stay readable.
+  const tableColumns = hasCalendar ? columns.filter((c) => !isDateColumn(c)) : columns;
 
   const csvHref = `/api/reports/${encodeURIComponent(sourceFile)}/${encodeURIComponent(sheetName)}/csv`;
   const baseParams = { q, row: rowParam, month: monthParam };
@@ -161,36 +161,19 @@ export default async function ComputedSheetPage({
             <thead className={t.thead}>
               <tr>
                 <th className={t.thNum}>Row</th>
-                {columns.map((col) =>
-                  isDateColumn(col) ? (
-                    <th
-                      key={col}
-                      className={`${t.th} text-center ${isWeekend(col) ? "bg-blue-50" : ""}`}
-                    >
-                      <div className="flex flex-col items-center normal-case">
-                        <span className="text-[10px] text-slate-400">{weekdayAbbr(col)}</span>
-                        <span>{shortDate(col)}</span>
-                      </div>
-                    </th>
-                  ) : (
-                    <th key={col} className={t.th}>
-                      {col}
-                    </th>
-                  ),
-                )}
+                {tableColumns.map((col) => (
+                  <th key={col} className={t.th}>
+                    {col}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className={t.tbody}>
               {rows.map((row) => (
                 <tr key={row.id} className={t.tr}>
                   <td className={t.tdNum}>{row.rowIndex}</td>
-                  {columns.map((col) => (
-                    <td
-                      key={col}
-                      className={`${t.td} ${isDateColumn(col) ? "text-center tabular-nums" : ""} ${
-                        isDateColumn(col) && isWeekend(col) ? "bg-blue-50/60" : ""
-                      }`}
-                    >
+                  {tableColumns.map((col) => (
+                    <td key={col} className={t.td}>
                       {cellValue(row.data, col)}
                     </td>
                   ))}
