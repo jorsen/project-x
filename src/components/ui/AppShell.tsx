@@ -1,11 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Menu, X, LayoutDashboard, LogOut } from "lucide-react";
+import {
+  Menu,
+  X,
+  LayoutDashboard,
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import { NavLink } from "./NavLink";
 import { RoleBadge } from "./Badge";
 import type { NavSection } from "@/lib/nav";
+
+const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
 
 function initials(name: string) {
   const parts = name.split(/[.\s_-]+/).filter(Boolean);
@@ -27,7 +36,20 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const close = () => setOpen(false);
+
+  useEffect(() => {
+    if (localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1") setCollapsed(true);
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? "1" : "0");
+      return next;
+    });
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 md:flex">
@@ -59,7 +81,7 @@ export function AppShell({
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] shrink-0 flex-col border-r border-slate-200 bg-white transition-transform duration-200 ease-in-out md:static md:w-64 md:max-w-none md:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
-        }`}
+        } ${collapsed ? "md:hidden" : ""}`}
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4">
           <Link href="/" className="flex items-center gap-2 hover:opacity-80" onClick={close}>
@@ -68,14 +90,25 @@ export function AppShell({
             </div>
             <span className="text-sm font-semibold text-slate-900">Stock &amp; Sales Tracker</span>
           </Link>
-          <button
-            type="button"
-            onClick={close}
-            className="rounded-md p-1 text-slate-400 hover:bg-slate-100 md:hidden"
-            aria-label="Close menu"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              className="hidden rounded-md p-1 text-slate-400 hover:bg-slate-100 md:block"
+              aria-label="Hide sidebar"
+              title="Hide sidebar"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={close}
+              className="rounded-md p-1 text-slate-400 hover:bg-slate-100 md:hidden"
+              aria-label="Close menu"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
@@ -121,8 +154,20 @@ export function AppShell({
         </div>
       </aside>
 
+      {collapsed && (
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          className="fixed top-4 left-4 z-30 hidden rounded-md border border-slate-200 bg-white p-2 text-slate-500 shadow-sm hover:bg-slate-50 md:flex"
+          aria-label="Show sidebar"
+          title="Show sidebar"
+        >
+          <PanelLeftOpen className="h-4 w-4" />
+        </button>
+      )}
+
       <main className="min-w-0 flex-1 overflow-x-auto p-4 sm:p-6 md:p-8">
-        <div className="mx-auto max-w-6xl">{children}</div>
+        <div className="mx-auto max-w-[1600px]">{children}</div>
       </main>
     </div>
   );
