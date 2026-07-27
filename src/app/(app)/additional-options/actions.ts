@@ -13,17 +13,26 @@ const FIELDS = [
   "partNumber",
   "category",
   "spq",
+  "delivery",
   "unitPrice",
   "oldUnitPrice",
 ];
 
 function readForm(formData: FormData) {
+  const spq = requireWholeNumber(parseNumberInput(formData.get("spq")), "SPQ");
+  const delivery = parseNumberInput(formData.get("delivery"));
+  if (spq && delivery % spq !== 0) {
+    throw new Error(
+      `Delivery (${delivery}) does not divide evenly into whole boxes of SPQ ${spq} (${(delivery / spq).toFixed(2)} boxes) — SPQ Check requires a whole number of boxes.`,
+    );
+  }
   return {
     ics: parseTextInput(formData.get("ics")),
     materialName: parseTextInput(formData.get("materialName")),
     partNumber: parseTextInput(formData.get("partNumber")),
     category: parseTextInput(formData.get("category")),
-    spq: requireWholeNumber(parseNumberInput(formData.get("spq")), "SPQ"),
+    spq,
+    delivery,
     unitPrice: parseNumberInput(formData.get("unitPrice")),
     oldUnitPrice: parseNumberInput(formData.get("oldUnitPrice")),
   };

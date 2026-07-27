@@ -71,6 +71,7 @@ export default async function AdditionalOptionsPage({
                   <th className={t.th}>Part Number</th>
                   <th className={t.th}>Category</th>
                   <th className={t.thNum}>SPQ</th>
+                  <th className={t.thNum}>Delivery</th>
                   <th className={t.thNum}>Unit Price</th>
                   <th className={t.thNum}>Old Unit Price</th>
                   {editable && <th className={t.th} />}
@@ -93,6 +94,9 @@ export default async function AdditionalOptionsPage({
                       {p.category ?? <span className="text-slate-300">—</span>}
                     </td>
                     <td className={t.tdNum}>{p.spq ?? <span className="text-slate-300">—</span>}</td>
+                    <td className={t.tdNum}>
+                      {p.delivery ?? <span className="text-slate-300">—</span>}
+                    </td>
                     <td className={t.tdNum}>
                       {p.unitPrice ?? <span className="text-slate-300">—</span>}
                     </td>

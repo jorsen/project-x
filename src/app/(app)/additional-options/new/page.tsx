@@ -28,6 +28,13 @@ export default async function NewProductPage() {
             ]}
           />
           <Field name="spq" label="SPQ" type="number" step="1" />
+          <Field
+            name="delivery"
+            label="Delivery"
+            type="number"
+            step="any"
+            description="Must divide evenly into whole boxes of SPQ."
+          />
           <Field name="unitPrice" label="Unit Price" type="number" step="any" />
           <Field name="oldUnitPrice" label="Old Unit Price" type="number" step="any" />
         </div>

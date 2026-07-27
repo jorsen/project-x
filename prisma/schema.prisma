@@ -189,6 +189,9 @@ model Product {
   partNumber   String?
   category     String?
   spq          Float?
+  // Delivery / SPQ must be a whole number of boxes (SPQ Check) — enforced
+  // in the create/update actions, not just a display field.
+  delivery     Float?
   unitPrice    Float?
   oldUnitPrice Float?
   createdAt    DateTime @default(now())

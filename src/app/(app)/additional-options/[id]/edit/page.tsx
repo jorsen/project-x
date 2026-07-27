@@ -43,6 +43,14 @@ export default async function EditProductPage({
           />
           <Field name="spq" label="SPQ" type="number" step="1" defaultValue={product.spq} />
           <Field
+            name="delivery"
+            label="Delivery"
+            type="number"
+            step="any"
+            defaultValue={product.delivery}
+            description="Must divide evenly into whole boxes of SPQ."
+          />
+          <Field
             name="unitPrice"
             label="Unit Price"
             type="number"
