@@ -27,7 +27,7 @@ export default async function JscphPartsPage({
     ? {
         OR: [
           { code: { contains: q, mode: "insensitive" as const } },
-          { ics1: { contains: q, mode: "insensitive" as const } },
+          { classification: { contains: q, mode: "insensitive" as const } },
           { partName: { contains: q, mode: "insensitive" as const } },
           { modelName: { contains: q, mode: "insensitive" as const } },
         ],
@@ -52,7 +52,7 @@ export default async function JscphPartsPage({
       <FlashBanner message={flash} />
 
       <div className="mb-4 flex gap-2">
-        <SearchInput placeholder="Search code, ICS1, part name, model name..." />
+        <SearchInput placeholder="Search code, classification, part name, model name..." />
       </div>
 
       {parts.length === 0 ? (
@@ -68,7 +68,7 @@ export default async function JscphPartsPage({
               <thead className={t.thead}>
                 <tr>
                   <th className={t.th}>Code</th>
-                  <th className={t.th}>ICS1</th>
+                  <th className={t.th}>Classification</th>
                   <th className={t.th}>Part Name</th>
                   <th className={t.th}>Model Name</th>
                   <th className={t.thNum}>SPQ</th>
@@ -81,7 +81,9 @@ export default async function JscphPartsPage({
                 {parts.map((p) => (
                   <tr key={p.id} className={t.tr}>
                     <td className={`${t.td} font-medium text-slate-900`}>{p.code}</td>
-                    <td className={t.td}>{p.ics1 ?? <span className="text-slate-300">—</span>}</td>
+                    <td className={t.td}>
+                      {p.classification ?? <span className="text-slate-300">—</span>}
+                    </td>
                     <td className={t.td}>{p.partName ?? <span className="text-slate-300">—</span>}</td>
                     <td className={t.td}>{p.modelName ?? <span className="text-slate-300">—</span>}</td>
                     <td className={t.tdNum}>{p.spq ?? <span className="text-slate-300">—</span>}</td>

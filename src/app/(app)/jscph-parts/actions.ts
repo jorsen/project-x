@@ -4,13 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireEditor } from "@/lib/authz";
-import { parseDateInput, parseNumberInput, parseTextInput } from "@/lib/format";
+import { parseDateInput, parseNumberInput, parseTextInput, requireWholeNumber } from "@/lib/format";
 import { logActivity, diffFields } from "@/lib/activity";
 import { notifyNegativeStock, crossedIntoNegative } from "@/lib/discord";
 
 const PART_FIELDS = [
   "code",
-  "ics1",
+  "classification",
   "partName",
   "modelName",
   "spq",
@@ -26,10 +26,10 @@ const ADJUSTMENT_FIELDS = ["boh", "incomingA", "incomingB"];
 function readPartForm(formData: FormData) {
   return {
     code: String(formData.get("code") ?? "").trim(),
-    ics1: parseTextInput(formData.get("ics1")),
+    classification: parseTextInput(formData.get("classification")),
     partName: parseTextInput(formData.get("partName")),
     modelName: parseTextInput(formData.get("modelName")),
-    spq: parseNumberInput(formData.get("spq")),
+    spq: requireWholeNumber(parseNumberInput(formData.get("spq")), "SPQ"),
     unitPricePurchase: parseNumberInput(formData.get("unitPricePurchase")),
     unitPriceSales: parseNumberInput(formData.get("unitPriceSales")),
   };
@@ -188,10 +188,16 @@ export async function upsertDailyDeliveryQty(partId: string, formData: FormData)
   if (!date) {
     throw new Error("Date is required");
   }
-  const [code, before] = await Promise.all([
+  const [code, before, part] = await Promise.all([
     partCode(partId),
     prisma.dailyDeliveryQty.findUnique({ where: { partId_date: { partId, date } } }),
+    prisma.jscphPart.findUnique({ where: { id: partId }, select: { spq: true } }),
   ]);
+  if (part?.spq && qty % part.spq !== 0) {
+    throw new Error(
+      `Delivery qty (${qty}) does not divide evenly into whole boxes of SPQ ${part.spq} (${(qty / part.spq).toFixed(2)} boxes) — SPQ Check requires a whole number of boxes.`,
+    );
+  }
   const data = { date, qty };
   await prisma.dailyDeliveryQty.upsert({
     where: { partId_date: { partId, date } },

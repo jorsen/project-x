@@ -14,7 +14,7 @@ to rebuild specific formulas on request.
 
 - Next.js 16 (App Router, TypeScript), deployed on Vercel
 - PostgreSQL via [Neon](https://neon.tech), accessed through Prisma 7 (`@prisma/adapter-pg`)
-- Auth.js v5, credentials login, roles `ADMIN` / `EDITOR` / `VIEWER`
+- Auth.js v5, credentials login, roles `ADMIN` (full CRUD) / `VIEWER` (read-only)
 - `exceljs` for parsing uploaded workbooks
 
 ## Local development

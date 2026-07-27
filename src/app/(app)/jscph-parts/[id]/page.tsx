@@ -101,9 +101,9 @@ export default async function JscphPartDetailPage({
               <dd className="mt-0.5 text-sm text-slate-900">{part.code}</dd>
             </div>
             <div>
-              <dt className="text-xs font-medium text-slate-500">ICS1</dt>
+              <dt className="text-xs font-medium text-slate-500">Classification</dt>
               <dd className="mt-0.5 text-sm text-slate-900">
-                {part.ics1 ?? <span className="text-slate-300">—</span>}
+                {part.classification ?? <span className="text-slate-300">—</span>}
               </dd>
             </div>
             <div>

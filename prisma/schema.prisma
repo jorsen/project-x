@@ -12,7 +12,6 @@ datasource db {
 
 enum Role {
   ADMIN
-  EDITOR
   VIEWER
 }
 
@@ -105,7 +104,10 @@ model OpenPoCustomerDemand {
 model JscphPart {
   id                String   @id @default(cuid())
   code              String   @unique
-  ics1              String?
+  // The source sheets label this column "CODE", but it only ever holds one
+  // of 3 classification values (IP / R / EC) — the true unique part code
+  // lives in the column the sheets label "ICS1", stored above as `code`.
+  classification    String?
   partName          String?
   modelName         String?
   spq               Float?
@@ -174,6 +176,23 @@ model DeliveryAdjustment {
   incomingA Float?
   incomingB Float?
   updatedAt DateTime  @updatedAt
+}
+
+// --- Additional Options: standalone product master data, added directly
+// on the site (not sourced from either Excel workbook) ------------------
+
+model Product {
+  id           String   @id @default(cuid())
+  no           Int      @unique @default(autoincrement())
+  ics          String?
+  materialName String?
+  partNumber   String?
+  category     String?
+  spq          Float?
+  unitPrice    Float?
+  oldUnitPrice Float?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 // --- Computed / formula-derived sheets (read-only reports) ------------

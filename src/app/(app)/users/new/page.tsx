@@ -34,7 +34,6 @@ export default async function NewUserPage() {
           defaultValue="VIEWER"
           options={[
             { value: "ADMIN", label: "ADMIN" },
-            { value: "EDITOR", label: "EDITOR" },
             { value: "VIEWER", label: "VIEWER" },
           ]}
         />

@@ -7,6 +7,7 @@ import {
   Upload,
   Users,
   Activity,
+  PackagePlus,
   type LucideIcon,
 } from "lucide-react";
 import type { NavIconName } from "./nav";
@@ -23,4 +24,5 @@ export const navIcons: Record<NavIconName, LucideIcon> = {
   Upload,
   Users,
   Activity,
+  PackagePlus,
 };

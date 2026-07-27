@@ -9,7 +9,7 @@ const MONTH_ABBR = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP
 async function upsertJscphPart(
   code: string,
   fields: {
-    ics1?: string | null;
+    classification?: string | null;
     partName?: string | null;
     modelName?: string | null;
     spq?: number | null;
@@ -46,7 +46,7 @@ async function importPoPriceMaster(
 
     const { id: partId, wasCreated } = await upsertJscphPart(code, {
       partName: toStr(cellValue(row.getCell("B"))),
-      ics1: toStr(cellValue(row.getCell("C"))),
+      classification: toStr(cellValue(row.getCell("C"))),
       unitPricePurchase: toNum(cellValue(row.getCell("D"))),
       unitPriceSales: toNum(cellValue(row.getCell("E"))),
     });
@@ -88,7 +88,7 @@ async function importForecastCalqIdentity(ws: ExcelJS.Worksheet): Promise<Import
     if (!code) continue;
 
     const { wasCreated } = await upsertJscphPart(code, {
-      ics1: toStr(cellValue(row.getCell("A"))),
+      classification: toStr(cellValue(row.getCell("A"))),
       partName: toStr(cellValue(row.getCell("C"))),
       modelName: toStr(cellValue(row.getCell("D"))),
       spq: toNum(cellValue(row.getCell("E"))),
@@ -117,7 +117,7 @@ async function importTblDeliveryQuantity(
     if (!code) continue;
 
     const { id: partId, wasCreated } = await upsertJscphPart(code, {
-      ics1: toStr(cellValue(row.getCell("A"))),
+      classification: toStr(cellValue(row.getCell("A"))),
       partName: toStr(cellValue(row.getCell("C"))),
       modelName: toStr(cellValue(row.getCell("D"))),
       spq: toNum(cellValue(row.getCell("E"))),

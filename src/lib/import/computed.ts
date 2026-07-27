@@ -65,6 +65,25 @@ export async function importComputedSheet(opts: {
     }
   }
 
+  // Blank cells default to 0 in columns that otherwise hold numbers (so a
+  // report like tblDelivery_Quantity shows 0 instead of a blank cell for a
+  // day with no delivery) — text columns (part names, etc.) are left alone.
+  const numericLabels = new Set<string>();
+  for (let col = 1; col <= maxCol; col++) {
+    const label = labels[col];
+    if (!label || numericLabels.has(label)) continue;
+    if (rows.some((r) => typeof r.data[label] === "number")) {
+      numericLabels.add(label);
+    }
+  }
+  for (const row of rows) {
+    for (const label of numericLabels) {
+      if (row.data[label] === null || row.data[label] === undefined) {
+        row.data[label] = 0;
+      }
+    }
+  }
+
   await prisma.computedSheetSnapshot.deleteMany({ where: { sourceFile, sheetName } });
   if (rows.length > 0) {
     await prisma.computedSheetSnapshot.createMany({

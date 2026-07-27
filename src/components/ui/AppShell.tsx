@@ -21,7 +21,7 @@ export function AppShell({
   children,
 }: {
   navSections: NavSection[];
-  role?: "ADMIN" | "EDITOR" | "VIEWER";
+  role?: "ADMIN" | "VIEWER";
   identity: string;
   signOutAction: () => Promise<void>;
   children: React.ReactNode;

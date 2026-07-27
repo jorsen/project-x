@@ -9,7 +9,7 @@ import { requireAdmin, type Role } from "@/lib/authz";
 import { parseTextInput } from "@/lib/format";
 import { logActivity, diffFields } from "@/lib/activity";
 
-const ROLES: Role[] = ["ADMIN", "EDITOR", "VIEWER"];
+const ROLES: Role[] = ["ADMIN", "VIEWER"];
 // Deliberately excludes passwordHash — never record password data in the
 // activity log, even hashed.
 const USER_FIELDS = ["name", "employeeNumber", "role"];

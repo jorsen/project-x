@@ -6,7 +6,8 @@ export type NavIconName =
   | "BarChart3"
   | "Upload"
   | "Users"
-  | "Activity";
+  | "Activity"
+  | "PackagePlus";
 
 export interface NavItem {
   href: string;
@@ -38,6 +39,7 @@ export const navSections: NavSection[] = [
     items: [
       { href: "/reports", label: "Computed Reports", icon: "BarChart3" },
       { href: "/activity", label: "Activity Log", icon: "Activity" },
+      { href: "/additional-options", label: "Additional Options", icon: "PackagePlus" },
     ],
   },
   {

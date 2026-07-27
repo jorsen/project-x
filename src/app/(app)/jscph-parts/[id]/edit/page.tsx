@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Field } from "@/components/ui/Field";
+import { Select } from "@/components/ui/Select";
 import { Button, LinkButton } from "@/components/ui/Button";
+import { CLASSIFICATION_OPTIONS } from "@/lib/classification";
 import { updateJscphPart } from "../../actions";
 
 export default async function EditJscphPartPage({
@@ -25,7 +27,12 @@ export default async function EditJscphPartPage({
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field name="code" label="Code" defaultValue={part.code} required />
-          <Field name="ics1" label="ICS1" defaultValue={part.ics1} />
+          <Select
+            name="classification"
+            label="Classification"
+            defaultValue={part.classification}
+            options={CLASSIFICATION_OPTIONS}
+          />
           <Field name="partName" label="Part Name" defaultValue={part.partName} />
           <Field name="modelName" label="Model Name" defaultValue={part.modelName} />
           <Field name="spq" label="SPQ" type="number" step="any" defaultValue={part.spq} />

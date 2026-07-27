@@ -20,7 +20,7 @@ export function Badge({ tone = "gray", children }: { tone?: Tone; children: Reac
   );
 }
 
-const roleTones: Record<string, Tone> = { ADMIN: "purple", EDITOR: "indigo", VIEWER: "gray" };
+const roleTones: Record<string, Tone> = { ADMIN: "purple", VIEWER: "gray" };
 
 export function RoleBadge({ role }: { role: string }) {
   return <Badge tone={roleTones[role] ?? "gray"}>{role}</Badge>;

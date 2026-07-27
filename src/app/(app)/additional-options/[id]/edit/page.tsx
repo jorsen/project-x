@@ -4,62 +4,62 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Field } from "@/components/ui/Field";
 import { Select } from "@/components/ui/Select";
 import { Button, LinkButton } from "@/components/ui/Button";
-import { toDateInputValue } from "@/lib/format";
-import { getEcompCategories } from "@/lib/categories";
-import { updateEcompPart } from "../../actions";
+import { getProductCategories } from "@/lib/categories";
+import { updateProduct } from "../../actions";
 
-export default async function EditEcompPartPage({
+export default async function EditProductPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [part, categories] = await Promise.all([
-    prisma.ecompPart.findUnique({ where: { id } }),
-    getEcompCategories(),
+  const [product, categories] = await Promise.all([
+    prisma.product.findUnique({ where: { id } }),
+    getProductCategories(),
   ]);
-  if (!part) notFound();
+  if (!product) notFound();
 
-  const updateWithId = updateEcompPart.bind(null, id);
+  const updateWithId = updateProduct.bind(null, id);
 
   return (
     <div className="max-w-2xl">
-      <PageHeader title="Edit Ecomp Part" description={`ICS ${part.ics}`} />
+      <PageHeader title="Edit Product" description={`No. ${product.no}`} />
       <form
         action={updateWithId}
         className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field name="no" label="No." defaultValue={part.no} />
-          <Field name="partNumber" label="Part Number" defaultValue={part.partNumber} />
+          <Field name="ics" label="ICS" defaultValue={product.ics} />
+          <Field name="materialName" label="Material Name" defaultValue={product.materialName} />
+          <Field name="partNumber" label="Part Number" defaultValue={product.partNumber} />
           <Select
             name="category"
             label="Category"
-            defaultValue={part.category}
+            defaultValue={product.category}
             options={[
               { value: "", label: "— None —" },
               ...categories.map((c) => ({ value: c, label: c })),
             ]}
           />
-          <Field name="ics" label="ICS" defaultValue={part.ics} required />
-          <Field name="maker" label="Maker" defaultValue={part.maker} />
+          <Field name="spq" label="SPQ" type="number" step="1" defaultValue={product.spq} />
           <Field
-            name="inventoryQty"
-            label="Inventory Qty"
+            name="unitPrice"
+            label="Unit Price"
             type="number"
             step="any"
-            defaultValue={part.inventoryQty}
+            defaultValue={product.unitPrice}
           />
           <Field
-            name="inventoryAsOf"
-            label="Inventory As Of"
-            type="date"
-            defaultValue={toDateInputValue(part.inventoryAsOf)}
+            name="oldUnitPrice"
+            label="Old Unit Price"
+            type="number"
+            step="any"
+            defaultValue={product.oldUnitPrice}
           />
         </div>
         <div className="flex gap-3 border-t border-slate-100 pt-4">
           <Button type="submit">Save</Button>
-          <LinkButton href="/ecomp-parts" variant="secondary">
+          <LinkButton href="/additional-options" variant="secondary">
             Cancel
           </LinkButton>
         </div>

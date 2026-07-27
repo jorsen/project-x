@@ -1,6 +1,8 @@
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Field } from "@/components/ui/Field";
+import { Select } from "@/components/ui/Select";
 import { Button, LinkButton } from "@/components/ui/Button";
+import { CLASSIFICATION_OPTIONS } from "@/lib/classification";
 import { createJscphPart } from "../actions";
 
 export default function NewJscphPartPage() {
@@ -13,7 +15,7 @@ export default function NewJscphPartPage() {
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field name="code" label="Code" required />
-          <Field name="ics1" label="ICS1" />
+          <Select name="classification" label="Classification" options={CLASSIFICATION_OPTIONS} />
           <Field name="partName" label="Part Name" />
           <Field name="modelName" label="Model Name" />
           <Field name="spq" label="SPQ" type="number" step="any" />
