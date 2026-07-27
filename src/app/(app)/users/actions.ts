@@ -7,9 +7,12 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, type Role } from "@/lib/authz";
 import { parseTextInput } from "@/lib/format";
-import { logActivity } from "@/lib/activity";
+import { logActivity, diffFields } from "@/lib/activity";
 
 const ROLES: Role[] = ["ADMIN", "EDITOR", "VIEWER"];
+// Deliberately excludes passwordHash — never record password data in the
+// activity log, even hashed.
+const USER_FIELDS = ["name", "employeeNumber", "role"];
 
 function parseRole(value: FormDataEntryValue | null): Role {
   const str = typeof value === "string" ? value.trim() : "";
@@ -44,6 +47,7 @@ export async function createUser(formData: FormData) {
     action: "CREATE",
     entityType: "User",
     entityLabel: `${name} (#${employeeNumber})`,
+    changes: diffFields(null, { name, employeeNumber, role }, USER_FIELDS),
   });
   revalidatePath("/users");
   redirect("/users?flash=User created");
@@ -54,6 +58,7 @@ export async function updateUserRole(id: string, formData: FormData) {
 
   const role = parseRole(formData.get("role"));
 
+  const before = await prisma.user.findUnique({ where: { id } });
   const user = await prisma.user.update({
     where: { id },
     data: { role },
@@ -62,7 +67,8 @@ export async function updateUserRole(id: string, formData: FormData) {
   await logActivity({
     action: "UPDATE",
     entityType: "User",
-    entityLabel: `${user.name} (#${user.employeeNumber}) → ${role}`,
+    entityLabel: `${user.name} (#${user.employeeNumber})`,
+    changes: diffFields(before, { role }, ["role"]),
   });
   revalidatePath("/users");
   redirect("/users?flash=Role updated");
@@ -105,6 +111,7 @@ export async function deleteUser(id: string) {
     action: "DELETE",
     entityType: "User",
     entityLabel: `${user.name} (#${user.employeeNumber})`,
+    changes: diffFields(user, null, USER_FIELDS),
   });
   revalidatePath("/users");
 }

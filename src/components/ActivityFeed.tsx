@@ -3,12 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import { Plus, Pencil, Trash2, Upload, type LucideIcon } from "lucide-react";
 
+export interface ActivityChange {
+  from: unknown;
+  to: unknown;
+}
+
 export interface ActivityLogItem {
   id: string;
   userName: string;
   action: string;
   entityType: string;
   entityLabel: string | null;
+  changes: Record<string, ActivityChange> | null;
   createdAt: string;
 }
 
@@ -22,6 +28,8 @@ const actionConfig: Record<string, { icon: LucideIcon; tone: string; verb: strin
   IMPORT: { icon: Upload, tone: "text-amber-600 bg-amber-50", verb: "imported" },
 };
 
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+
 function relativeTime(iso: string): string {
   const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
   if (seconds < 5) return "just now";
@@ -31,6 +39,32 @@ function relativeTime(iso: string): string {
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h ago`;
   return new Date(iso).toLocaleDateString();
+}
+
+function formatValue(value: unknown): string {
+  if (value === null || value === undefined || value === "") return "—";
+  if (typeof value === "string" && ISO_DATE_RE.test(value)) {
+    // Dates come through as full ISO timestamps even for date-only fields;
+    // show just the date unless there's a meaningful time component.
+    return value.endsWith("T00:00:00.000Z") ? value.slice(0, 10) : value.replace("T", " ").slice(0, 19);
+  }
+  return String(value);
+}
+
+function ChangesList({ changes }: { changes: Record<string, ActivityChange> }) {
+  const entries = Object.entries(changes);
+  return (
+    <ul className="mt-1.5 space-y-0.5 rounded-md bg-slate-50 px-2.5 py-2 text-xs">
+      {entries.map(([field, { from, to }]) => (
+        <li key={field} className="flex flex-wrap items-baseline gap-1 text-slate-600">
+          <span className="font-medium text-slate-700">{field}:</span>
+          <span className="text-slate-400 line-through">{formatValue(from)}</span>
+          <span className="text-slate-400">→</span>
+          <span className="text-slate-800">{formatValue(to)}</span>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 export function ActivityFeed({ initialLogs }: { initialLogs: ActivityLogItem[] }) {
@@ -103,6 +137,7 @@ export function ActivityFeed({ initialLogs }: { initialLogs: ActivityLogItem[] }
                 {log.entityLabel && <span className="text-slate-500"> — {log.entityLabel}</span>}
               </p>
               <p className="text-xs text-slate-400">{relativeTime(log.createdAt)}</p>
+              {log.changes && <ChangesList changes={log.changes} />}
             </div>
           </div>
         );

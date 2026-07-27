@@ -5,7 +5,22 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireEditor } from "@/lib/authz";
 import { parseDateInput, parseNumberInput, parseTextInput } from "@/lib/format";
-import { logActivity } from "@/lib/activity";
+import { logActivity, diffFields } from "@/lib/activity";
+
+const PART_FIELDS = [
+  "code",
+  "ics1",
+  "partName",
+  "modelName",
+  "spq",
+  "unitPricePurchase",
+  "unitPriceSales",
+];
+const PO_PRICE_FIELDS = ["poNumber", "qty"];
+const FORECAST_FIELDS = ["month", "usageQty"];
+const DELIVERY_FIELDS = ["date", "qty"];
+const BUFFER_FIELDS = ["month", "bufferQty"];
+const ADJUSTMENT_FIELDS = ["boh", "incomingA", "incomingB"];
 
 function readPartForm(formData: FormData) {
   return {
@@ -38,7 +53,12 @@ export async function createJscphPart(formData: FormData) {
     throw new Error("Code is required");
   }
   await prisma.jscphPart.create({ data: { ...data, code: data.code } });
-  await logActivity({ action: "CREATE", entityType: "JscphPart", entityLabel: data.code });
+  await logActivity({
+    action: "CREATE",
+    entityType: "JscphPart",
+    entityLabel: data.code,
+    changes: diffFields(null, data, PART_FIELDS),
+  });
   revalidatePath("/jscph-parts");
   redirect("/jscph-parts?flash=Record created");
 }
@@ -49,11 +69,17 @@ export async function updateJscphPart(id: string, formData: FormData) {
   if (!data.code) {
     throw new Error("Code is required");
   }
+  const before = await prisma.jscphPart.findUnique({ where: { id } });
   await prisma.jscphPart.update({
     where: { id },
     data: { ...data, code: data.code },
   });
-  await logActivity({ action: "UPDATE", entityType: "JscphPart", entityLabel: data.code });
+  await logActivity({
+    action: "UPDATE",
+    entityType: "JscphPart",
+    entityLabel: data.code,
+    changes: diffFields(before, data, PART_FIELDS),
+  });
   revalidatePath("/jscph-parts");
   redirect("/jscph-parts?flash=Record updated");
 }
@@ -61,7 +87,12 @@ export async function updateJscphPart(id: string, formData: FormData) {
 export async function deleteJscphPart(id: string) {
   await requireEditor();
   const part = await prisma.jscphPart.delete({ where: { id } });
-  await logActivity({ action: "DELETE", entityType: "JscphPart", entityLabel: part.code });
+  await logActivity({
+    action: "DELETE",
+    entityType: "JscphPart",
+    entityLabel: part.code,
+    changes: diffFields(part, null, PART_FIELDS),
+  });
   revalidatePath("/jscph-parts");
 }
 
@@ -74,15 +105,22 @@ export async function upsertPoPriceEntry(partId: string, formData: FormData) {
   if (!poNumber) {
     throw new Error("PO # is required");
   }
-  const [code] = await Promise.all([
+  const [code, before] = await Promise.all([
     partCode(partId),
-    prisma.poPriceEntry.upsert({
-      where: { partId_poNumber: { partId, poNumber } },
-      create: { partId, poNumber, qty },
-      update: { qty },
-    }),
+    prisma.poPriceEntry.findUnique({ where: { partId_poNumber: { partId, poNumber } } }),
   ]);
-  await logActivity({ action: "UPDATE", entityType: "PoPriceEntry", entityLabel: `${code} — ${poNumber}` });
+  const data = { poNumber, qty };
+  await prisma.poPriceEntry.upsert({
+    where: { partId_poNumber: { partId, poNumber } },
+    create: { partId, ...data },
+    update: { qty },
+  });
+  await logActivity({
+    action: before ? "UPDATE" : "CREATE",
+    entityType: "PoPriceEntry",
+    entityLabel: `${code} — ${poNumber}`,
+    changes: diffFields(before, data, PO_PRICE_FIELDS),
+  });
   revalidatePath(`/jscph-parts/${partId}`);
 }
 
@@ -94,6 +132,7 @@ export async function deletePoPriceEntry(id: string) {
     action: "DELETE",
     entityType: "PoPriceEntry",
     entityLabel: `${code} — ${entry.poNumber}`,
+    changes: diffFields(entry, null, PO_PRICE_FIELDS),
   });
   revalidatePath(`/jscph-parts/${entry.partId}`);
 }
@@ -107,18 +146,21 @@ export async function upsertMonthlyForecastUsage(partId: string, formData: FormD
   if (!month) {
     throw new Error("Month is required");
   }
-  const [code] = await Promise.all([
+  const [code, before] = await Promise.all([
     partCode(partId),
-    prisma.monthlyForecastUsage.upsert({
-      where: { partId_month: { partId, month } },
-      create: { partId, month, usageQty },
-      update: { usageQty },
-    }),
+    prisma.monthlyForecastUsage.findUnique({ where: { partId_month: { partId, month } } }),
   ]);
+  const data = { month, usageQty };
+  await prisma.monthlyForecastUsage.upsert({
+    where: { partId_month: { partId, month } },
+    create: { partId, ...data },
+    update: { usageQty },
+  });
   await logActivity({
-    action: "UPDATE",
+    action: before ? "UPDATE" : "CREATE",
     entityType: "MonthlyForecastUsage",
     entityLabel: `${code} — ${month.toISOString().slice(0, 7)}`,
+    changes: diffFields(before, data, FORECAST_FIELDS),
   });
   revalidatePath(`/jscph-parts/${partId}`);
 }
@@ -131,6 +173,7 @@ export async function deleteMonthlyForecastUsage(id: string) {
     action: "DELETE",
     entityType: "MonthlyForecastUsage",
     entityLabel: `${code} — ${entry.month.toISOString().slice(0, 7)}`,
+    changes: diffFields(entry, null, FORECAST_FIELDS),
   });
   revalidatePath(`/jscph-parts/${entry.partId}`);
 }
@@ -144,18 +187,21 @@ export async function upsertDailyDeliveryQty(partId: string, formData: FormData)
   if (!date) {
     throw new Error("Date is required");
   }
-  const [code] = await Promise.all([
+  const [code, before] = await Promise.all([
     partCode(partId),
-    prisma.dailyDeliveryQty.upsert({
-      where: { partId_date: { partId, date } },
-      create: { partId, date, qty },
-      update: { qty },
-    }),
+    prisma.dailyDeliveryQty.findUnique({ where: { partId_date: { partId, date } } }),
   ]);
+  const data = { date, qty };
+  await prisma.dailyDeliveryQty.upsert({
+    where: { partId_date: { partId, date } },
+    create: { partId, ...data },
+    update: { qty },
+  });
   await logActivity({
-    action: "UPDATE",
+    action: before ? "UPDATE" : "CREATE",
     entityType: "DailyDeliveryQty",
     entityLabel: `${code} — ${date.toISOString().slice(0, 10)}`,
+    changes: diffFields(before, data, DELIVERY_FIELDS),
   });
   revalidatePath(`/jscph-parts/${partId}`);
 }
@@ -168,6 +214,7 @@ export async function deleteDailyDeliveryQty(id: string) {
     action: "DELETE",
     entityType: "DailyDeliveryQty",
     entityLabel: `${code} — ${entry.date.toISOString().slice(0, 10)}`,
+    changes: diffFields(entry, null, DELIVERY_FIELDS),
   });
   revalidatePath(`/jscph-parts/${entry.partId}`);
 }
@@ -181,18 +228,21 @@ export async function upsertMonthlyBufferOverride(partId: string, formData: Form
   if (!month) {
     throw new Error("Month is required");
   }
-  const [code] = await Promise.all([
+  const [code, before] = await Promise.all([
     partCode(partId),
-    prisma.monthlyBufferOverride.upsert({
-      where: { partId_month: { partId, month } },
-      create: { partId, month, bufferQty },
-      update: { bufferQty },
-    }),
+    prisma.monthlyBufferOverride.findUnique({ where: { partId_month: { partId, month } } }),
   ]);
+  const data = { month, bufferQty };
+  await prisma.monthlyBufferOverride.upsert({
+    where: { partId_month: { partId, month } },
+    create: { partId, ...data },
+    update: { bufferQty },
+  });
   await logActivity({
-    action: "UPDATE",
+    action: before ? "UPDATE" : "CREATE",
     entityType: "MonthlyBufferOverride",
     entityLabel: `${code} — ${month.toISOString().slice(0, 7)}`,
+    changes: diffFields(before, data, BUFFER_FIELDS),
   });
   revalidatePath(`/jscph-parts/${partId}`);
 }
@@ -205,6 +255,7 @@ export async function deleteMonthlyBufferOverride(id: string) {
     action: "DELETE",
     entityType: "MonthlyBufferOverride",
     entityLabel: `${code} — ${entry.month.toISOString().slice(0, 7)}`,
+    changes: diffFields(entry, null, BUFFER_FIELDS),
   });
   revalidatePath(`/jscph-parts/${entry.partId}`);
 }
@@ -216,14 +267,21 @@ export async function upsertDeliveryAdjustment(partId: string, formData: FormDat
   const boh = parseNumberInput(formData.get("boh"));
   const incomingA = parseNumberInput(formData.get("incomingA"));
   const incomingB = parseNumberInput(formData.get("incomingB"));
-  const [code] = await Promise.all([
+  const [code, before] = await Promise.all([
     partCode(partId),
-    prisma.deliveryAdjustment.upsert({
-      where: { partId },
-      create: { partId, boh, incomingA, incomingB },
-      update: { boh, incomingA, incomingB },
-    }),
+    prisma.deliveryAdjustment.findUnique({ where: { partId } }),
   ]);
-  await logActivity({ action: "UPDATE", entityType: "DeliveryAdjustment", entityLabel: code });
+  const data = { boh, incomingA, incomingB };
+  await prisma.deliveryAdjustment.upsert({
+    where: { partId },
+    create: { partId, ...data },
+    update: data,
+  });
+  await logActivity({
+    action: before ? "UPDATE" : "CREATE",
+    entityType: "DeliveryAdjustment",
+    entityLabel: code,
+    changes: diffFields(before, data, ADJUSTMENT_FIELDS),
+  });
   revalidatePath(`/jscph-parts/${partId}`);
 }

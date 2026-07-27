@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireEditor } from "@/lib/authz";
 import { parseNumberInput, parseTextInput } from "@/lib/format";
-import { logActivity } from "@/lib/activity";
+import { logActivity, diffFields } from "@/lib/activity";
+
+const FIELDS = ["sourceSheet", "no", "partNumber", "category", "ics", "maker", "unitPrice"];
+const DEMAND_FIELDS = ["customerCode", "qty"];
 
 function readForm(formData: FormData) {
   return {
@@ -37,6 +40,7 @@ export async function createOpenPoLine(formData: FormData) {
     action: "CREATE",
     entityType: "OpenPoLine",
     entityLabel: `${data.sourceSheet} / ${data.ics}`,
+    changes: diffFields(null, data, FIELDS),
   });
   revalidatePath("/open-po");
   redirect("/open-po?flash=Record created");
@@ -46,6 +50,7 @@ export async function updateOpenPoLine(id: string, formData: FormData) {
   await requireEditor();
   const data = readForm(formData);
   validate(data);
+  const before = await prisma.openPoLine.findUnique({ where: { id } });
   await prisma.openPoLine.update({
     where: { id },
     data: { ...data, ics: data.ics },
@@ -54,6 +59,7 @@ export async function updateOpenPoLine(id: string, formData: FormData) {
     action: "UPDATE",
     entityType: "OpenPoLine",
     entityLabel: `${data.sourceSheet} / ${data.ics}`,
+    changes: diffFields(before, data, FIELDS),
   });
   revalidatePath("/open-po");
   redirect("/open-po?flash=Record updated");
@@ -66,6 +72,7 @@ export async function deleteOpenPoLine(id: string) {
     action: "DELETE",
     entityType: "OpenPoLine",
     entityLabel: `${line.sourceSheet} / ${line.ics}`,
+    changes: diffFields(line, null, FIELDS),
   });
   revalidatePath("/open-po");
 }
@@ -77,18 +84,21 @@ export async function upsertOpenPoCustomerDemand(lineId: string, formData: FormD
   if (!customerCode) {
     throw new Error("Customer Code is required");
   }
-  const [line] = await Promise.all([
+  const [line, before] = await Promise.all([
     prisma.openPoLine.findUnique({ where: { id: lineId }, select: { ics: true } }),
-    prisma.openPoCustomerDemand.upsert({
-      where: { lineId_customerCode: { lineId, customerCode } },
-      create: { lineId, customerCode, qty },
-      update: { qty },
-    }),
+    prisma.openPoCustomerDemand.findUnique({ where: { lineId_customerCode: { lineId, customerCode } } }),
   ]);
+  const data = { customerCode, qty };
+  await prisma.openPoCustomerDemand.upsert({
+    where: { lineId_customerCode: { lineId, customerCode } },
+    create: { lineId, ...data },
+    update: { qty },
+  });
   await logActivity({
-    action: "UPDATE",
+    action: before ? "UPDATE" : "CREATE",
     entityType: "OpenPoCustomerDemand",
     entityLabel: `${line?.ics ?? lineId} — ${customerCode}`,
+    changes: diffFields(before, data, DEMAND_FIELDS),
   });
   revalidatePath(`/open-po/${lineId}`);
 }
@@ -103,6 +113,7 @@ export async function deleteOpenPoCustomerDemand(id: string) {
     action: "DELETE",
     entityType: "OpenPoCustomerDemand",
     entityLabel: `${demand.line.ics} — ${demand.customerCode}`,
+    changes: diffFields(demand, null, DEMAND_FIELDS),
   });
   revalidatePath(`/open-po/${demand.lineId}`);
 }

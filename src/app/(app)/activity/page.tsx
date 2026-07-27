@@ -26,6 +26,7 @@ export default async function ActivityPage() {
     action: log.action,
     entityType: log.entityType,
     entityLabel: log.entityLabel,
+    changes: log.changes as ActivityLogItem["changes"],
     createdAt: log.createdAt.toISOString(),
   }));
 

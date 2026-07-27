@@ -206,6 +206,7 @@ model ActivityLog {
   action      String   // "CREATE" | "UPDATE" | "DELETE" | "IMPORT"
   entityType  String   // e.g. "ReceivingRecord", "EcompPart", "User", "Import"
   entityLabel String?
+  changes     Json?    // { fieldName: { from, to } } for fields that changed
   createdAt   DateTime @default(now())
 
   @@index([createdAt])
