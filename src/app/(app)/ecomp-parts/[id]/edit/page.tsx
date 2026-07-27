@@ -24,7 +24,7 @@ export default async function EditEcompPartPage({
         action={updateWithId}
         className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
       >
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field name="no" label="No." defaultValue={part.no} />
           <Field name="partNumber" label="Part Number" defaultValue={part.partNumber} />
           <Field name="category" label="Category" defaultValue={part.category} />

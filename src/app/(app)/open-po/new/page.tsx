@@ -12,7 +12,7 @@ export default function NewOpenPoLinePage() {
         action={createOpenPoLine}
         className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
       >
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Select
             name="sourceSheet"
             label="Source Sheet"

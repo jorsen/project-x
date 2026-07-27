@@ -47,7 +47,7 @@ export default async function OpenPoLineDetailPage({
         }
       />
 
-      <div className="mb-8 grid max-w-2xl grid-cols-2 gap-x-4 gap-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="mb-8 grid max-w-2xl grid-cols-1 gap-x-4 gap-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:grid-cols-2">
         <InfoField label="Source Sheet" value={<SourceSheetBadge sourceSheet={line.sourceSheet} />} />
         <InfoField label="No." value={line.no} />
         <InfoField label="Part Number" value={line.partNumber} />
@@ -97,7 +97,7 @@ export default async function OpenPoLineDetailPage({
         <div className="max-w-md rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <h3 className="mb-3 text-sm font-semibold text-slate-900">Add / Update Customer Demand</h3>
           <form action={upsertDemand} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field name="customerCode" label="Customer Code" required />
               <Field name="qty" label="Qty" type="number" step="any" />
             </div>

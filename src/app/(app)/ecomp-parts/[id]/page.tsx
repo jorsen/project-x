@@ -52,7 +52,7 @@ export default async function EcompPartDetailPage({
       />
 
       <div className="mb-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {fields.map((f) => (
             <div key={f.label}>
               <dt className="text-xs font-medium text-slate-500">{f.label}</dt>
@@ -105,12 +105,12 @@ export default async function EcompPartDetailPage({
       {editable && (
         <form
           action={upsertDemandForPart}
-          className="flex items-end gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+          className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
         >
-          <div className="w-40">
+          <div className="w-full sm:w-40">
             <Field name="customerCode" label="Customer Code" required />
           </div>
-          <div className="w-32">
+          <div className="w-full sm:w-32">
             <Field name="qty" label="Qty" type="number" step="any" />
           </div>
           <Button type="submit">Add / Update</Button>

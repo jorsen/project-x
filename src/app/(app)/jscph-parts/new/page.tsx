@@ -11,7 +11,7 @@ export default function NewJscphPartPage() {
         action={createJscphPart}
         className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
       >
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field name="code" label="Code" required />
           <Field name="ics1" label="ICS1" />
           <Field name="partName" label="Part Name" />

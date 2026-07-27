@@ -24,7 +24,7 @@ export default async function EditReceivingRecordPage({
         action={updateWithId}
         className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
       >
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field name="no" label="No." type="number" defaultValue={record.no} required />
           <Field name="ics" label="ICS" defaultValue={record.ics} required />
           <Field name="partName" label="Part Name" defaultValue={record.partName} />

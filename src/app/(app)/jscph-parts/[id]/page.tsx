@@ -95,7 +95,7 @@ export default async function JscphPartDetailPage({
       <div className="space-y-6">
         {/* Core fields summary */}
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <dt className="text-xs font-medium text-slate-500">Code</dt>
               <dd className="mt-0.5 text-sm text-slate-900">{part.code}</dd>
@@ -370,7 +370,7 @@ export default async function JscphPartDetailPage({
           <h2 className="mb-4 text-sm font-semibold text-slate-900">Delivery Adjustment</h2>
           {editable ? (
             <form action={upsertDeliveryAdjustmentWithId} className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <Field
                   name="boh"
                   label="BOH"
@@ -400,7 +400,7 @@ export default async function JscphPartDetailPage({
               </div>
             </form>
           ) : (
-            <dl className="grid grid-cols-3 gap-4">
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
                 <dt className="text-xs font-medium text-slate-500">BOH</dt>
                 <dd className="mt-0.5 text-sm text-slate-900">
