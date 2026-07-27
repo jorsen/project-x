@@ -52,6 +52,20 @@ development.
 4. Log in, change the seeded admin password (Users → your account → reset
    password), and create real accounts for other users.
 
+## PWA support
+
+The app is installable (Android/desktop Chrome, iOS Safari "Add to Home
+Screen") — manifest at `src/app/manifest.ts`, icons generated on the fly from
+`src/lib/pwaIcon.tsx` via `next/og` (`src/app/icon.tsx`, `apple-icon.tsx`, and
+the `/icon-192`, `/icon-512`, `/icon-512-maskable` routes). A minimal service
+worker (`public/sw.js`, registered by `src/components/PwaRegister.tsx`) caches
+the app shell for a friendly `/offline` page and speeds up repeat loads of
+`_next/static` assets — it deliberately does **not** cache API/data responses,
+since this is a live multi-user app, not an offline-first one. The service
+worker only registers in production builds (`npm run build && npm start`) —
+it's intentionally skipped in `npm run dev` since Turbopack's dev-mode chunk
+reloading conflicts with the cache-first assumption for static assets.
+
 ## Data model notes
 
 - Each entity that maps to a raw/editable Excel column has full CRUD in the

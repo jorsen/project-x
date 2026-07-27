@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { PwaRegister } from "@/components/PwaRegister";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,12 +16,18 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Stock & Sales Tracker",
   description: "Inventory, receiving, and PO tracking",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Stock Tracker",
+  },
 };
 
 // Declares this app as light-themed only, so browsers don't auto-invert
 // colors on it (see the color-scheme comment in globals.css).
 export const viewport: Viewport = {
   colorScheme: "light",
+  themeColor: "#4f46e5",
 };
 
 export default function RootLayout({
@@ -39,6 +46,7 @@ export default function RootLayout({
           children before React hydrates, which otherwise trips a false-positive
           hydration-mismatch warning that dims the whole page in dev mode. */}
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
+        <PwaRegister />
         {children}
       </body>
     </html>

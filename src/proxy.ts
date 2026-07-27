@@ -22,5 +22,7 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!api/auth|_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|offline|icon|apple-icon|icon-192|icon-512|icon-512-maskable).*)",
+  ],
 };
