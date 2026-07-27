@@ -85,6 +85,33 @@ export function trimTrailingBlankColumns(worksheet: ExcelJS.Worksheet, headerRow
   return worksheet.columnCount;
 }
 
+/** Finds the first row at or after `fromRow` where every cell up to `maxCol`
+ * is blank. Some sheets (e.g. RUNNING STOCK (Resin)) have a free-text
+ * "Legend"/"Remarks" block below their real table, separated by a blank row
+ * — without a bound, that footer text gets swept in as if it were data rows
+ * (its identifier-shaped column holds real text, so the generic per-row
+ * blank/identifier check in computed.ts can't tell it apart on its own).
+ * Returns null if no blank row is found before the worksheet's last row. */
+export function findFirstBlankRow(
+  worksheet: ExcelJS.Worksheet,
+  fromRow: number,
+  maxCol: number,
+): number | null {
+  for (let r = fromRow; r <= worksheet.rowCount; r++) {
+    const row = worksheet.getRow(r);
+    let hasValue = false;
+    for (let col = 1; col <= maxCol; col++) {
+      const value = cellValue(row.getCell(col));
+      if (value !== null && value !== undefined && value !== "") {
+        hasValue = true;
+        break;
+      }
+    }
+    if (!hasValue) return r;
+  }
+  return null;
+}
+
 /** Strips null/undefined keys so a Prisma `update` only touches fields that
  * actually have a new value, letting repeated imports from different sheets
  * progressively enrich a shared record without clobbering existing data. */

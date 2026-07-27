@@ -9,6 +9,7 @@ import {
   emptyCounts,
   findHeaderColumn,
   trimTrailingBlankColumns,
+  findFirstBlankRow,
   bulkUpsertChildren,
   type ImportCounts,
 } from "./utils";
@@ -473,9 +474,19 @@ export async function importJscphWorkbook(workbook: ExcelJS.Workbook, referenceY
       sourceFile: "JSCPH",
       sheetName: "RUNNING STOCK (Resin)",
       worksheet: runningStockResin,
-      headerRow: 2,
+      // Row 2 only repeats the identity labels (ICS1/PART NAME/SPQ/BOH/
+      // STATUS) — the real header, with the daily date columns starting at
+      // G, is row 3. Reading from row 2 left every date column blank-headed.
+      headerRow: 3,
       dataStartRow: 4,
-      maxCol: trimTrailingBlankColumns(runningStockResin, 2),
+      maxCol: trimTrailingBlankColumns(runningStockResin, 3),
+      // The real table (3 rows per part: OUT/IN/SOH) ends at a blank row,
+      // followed by a "Legend"/"Remarks" free-text block — without this
+      // bound, that footer text gets swept in as phantom data rows (its
+      // ICS1-column text passes the generic identifier check).
+      lastRow:
+        (findFirstBlankRow(runningStockResin, 4, trimTrailingBlankColumns(runningStockResin, 3)) ??
+          runningStockResin.rowCount + 1) - 1,
     }),
     importComputedSheet({
       sourceFile: "JSCPH",

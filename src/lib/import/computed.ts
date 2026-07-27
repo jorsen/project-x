@@ -41,8 +41,11 @@ export async function importComputedSheet(opts: {
   headerRow: number;
   dataStartRow: number;
   maxCol: number;
+  // Bounds the data block for sheets with trailing free-text content (see
+  // findFirstBlankRow) — defaults to the worksheet's own row count.
+  lastRow?: number;
 }): Promise<number> {
-  const { sourceFile, sheetName, worksheet, headerRow, dataStartRow, maxCol } = opts;
+  const { sourceFile, sheetName, worksheet, headerRow, dataStartRow, maxCol, lastRow: lastRowOverride } = opts;
 
   const headerCells = worksheet.getRow(headerRow);
   const labels: string[] = [];
@@ -69,7 +72,7 @@ export async function importComputedSheet(opts: {
   );
 
   const rows: { rowIndex: number; data: Record<string, unknown> }[] = [];
-  const lastRow = Math.max(worksheet.rowCount, dataStartRow);
+  const lastRow = lastRowOverride ?? Math.max(worksheet.rowCount, dataStartRow);
 
   for (let rowNum = dataStartRow; rowNum <= lastRow; rowNum++) {
     const row = worksheet.getRow(rowNum);

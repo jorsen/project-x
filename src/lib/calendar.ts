@@ -73,5 +73,12 @@ export function rowLabel(
     const value = data[match];
     if (value !== null && value !== undefined && value !== "") parts.push(String(value));
   }
-  return parts.length > 0 ? parts.join(" — ") : `Row ${rowIndex}`;
+  const label = parts.length > 0 ? parts.join(" — ") : `Row ${rowIndex}`;
+
+  // RUNNING STOCK (Resin) has 3 rows per part (OUT/IN/SOH) sharing the same
+  // ICS1/PART NAME — without this, they'd show up as identical, indistinguishable
+  // entries in the picker. No-op for sheets without a STATUS column.
+  const statusCol = columns.find((c) => c.toUpperCase() === "STATUS");
+  const status = statusCol ? data[statusCol] : null;
+  return status !== null && status !== undefined && status !== "" ? `${label} (${status})` : label;
 }
