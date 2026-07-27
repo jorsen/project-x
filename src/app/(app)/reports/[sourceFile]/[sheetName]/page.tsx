@@ -10,6 +10,9 @@ import { RowSelect } from "@/components/ui/RowSelect";
 import * as t from "@/components/ui/table";
 import {
   isDateColumn,
+  isWeekend,
+  weekdayAbbr,
+  shortDate,
   monthKeyOf,
   shiftMonth,
   monthLabel,
@@ -158,11 +161,23 @@ export default async function ComputedSheetPage({
             <thead className={t.thead}>
               <tr>
                 <th className={t.thNum}>Row</th>
-                {columns.map((col) => (
-                  <th key={col} className={t.th}>
-                    {col}
-                  </th>
-                ))}
+                {columns.map((col) =>
+                  isDateColumn(col) ? (
+                    <th
+                      key={col}
+                      className={`${t.th} text-center ${isWeekend(col) ? "bg-blue-50" : ""}`}
+                    >
+                      <div className="flex flex-col items-center normal-case">
+                        <span className="text-[10px] text-slate-400">{weekdayAbbr(col)}</span>
+                        <span>{shortDate(col)}</span>
+                      </div>
+                    </th>
+                  ) : (
+                    <th key={col} className={t.th}>
+                      {col}
+                    </th>
+                  ),
+                )}
               </tr>
             </thead>
             <tbody className={t.tbody}>
@@ -170,7 +185,12 @@ export default async function ComputedSheetPage({
                 <tr key={row.id} className={t.tr}>
                   <td className={t.tdNum}>{row.rowIndex}</td>
                   {columns.map((col) => (
-                    <td key={col} className={t.td}>
+                    <td
+                      key={col}
+                      className={`${t.td} ${isDateColumn(col) ? "text-center tabular-nums" : ""} ${
+                        isDateColumn(col) && isWeekend(col) ? "bg-blue-50/60" : ""
+                      }`}
+                    >
                       {cellValue(row.data, col)}
                     </td>
                   ))}

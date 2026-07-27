@@ -7,6 +7,30 @@ export function isDateColumn(label: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(label);
 }
 
+const WEEKDAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function weekdayOf(dateStr: string): number {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+}
+
+/** "Wed" — matches the weekday row the source Excel prints above each date. */
+export function weekdayAbbr(dateStr: string): string {
+  return WEEKDAY_ABBR[weekdayOf(dateStr)];
+}
+
+export function isWeekend(dateStr: string): boolean {
+  const day = weekdayOf(dateStr);
+  return day === 0 || day === 6;
+}
+
+/** "7/1" — the compact month/day format the source Excel uses, instead of
+ * the full "2026-07-01" stored as the column's machine-readable key. */
+export function shortDate(dateStr: string): string {
+  const [, m, d] = dateStr.split("-").map(Number);
+  return `${m}/${d}`;
+}
+
 export function monthKeyOf(dateStr: string): string {
   return dateStr.slice(0, 7);
 }
