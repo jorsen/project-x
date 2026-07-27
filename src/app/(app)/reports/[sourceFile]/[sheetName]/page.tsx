@@ -111,8 +111,10 @@ export default async function ComputedSheetPage({
   const dateColumns = columns.filter(isDateColumn).sort();
   const hasCalendar = dateColumns.length > 0;
 
+  // allRows is ordered by rowIndex, so this naturally preserves the sheet's
+  // own block order (IP, then R, then EC) rather than sorting alphabetically.
   const categories = columns.includes(CODE_COLUMN)
-    ? [...new Set(allRows.map((r) => cellValue(r.data, CODE_COLUMN)).filter(Boolean))].sort()
+    ? [...new Set(allRows.map((r) => cellValue(r.data, CODE_COLUMN)).filter(Boolean))]
     : [];
   const hasCategory = hasCalendar && categories.length > 0;
 
