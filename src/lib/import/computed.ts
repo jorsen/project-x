@@ -113,6 +113,22 @@ export async function importComputedSheet(opts: {
     }
   }
 
+  // Placeholder-labeled ("colN") columns that never hold a real value in any
+  // row are pure spacer columns baked into the sheet — reserved PO slots,
+  // leftover scratch cells — and showing them as "COL20", "COL21", etc. in
+  // the Reports table is noise, not data. A blank-labeled column that DOES
+  // carry real values somewhere (e.g. Forecast_CALQ's column 52) is left
+  // alone — only ones with zero data anywhere get dropped.
+  const emptyPlaceholderLabels = [...usedLabels].filter((label) => {
+    if (!/^col\d+$/.test(label)) return false;
+    return !rows.some((r) => r.data[label] !== null && r.data[label] !== undefined && r.data[label] !== "");
+  });
+  for (const row of rows) {
+    for (const label of emptyPlaceholderLabels) {
+      delete row.data[label];
+    }
+  }
+
   await prisma.computedSheetSnapshot.deleteMany({ where: { sourceFile, sheetName } });
   if (rows.length > 0) {
     await prisma.computedSheetSnapshot.createMany({
