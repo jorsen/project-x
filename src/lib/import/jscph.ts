@@ -8,6 +8,7 @@ import {
   compact,
   emptyCounts,
   findHeaderColumn,
+  trimTrailingBlankColumns,
   bulkUpsertChildren,
   type ImportCounts,
 } from "./utils";
@@ -445,7 +446,12 @@ export async function importJscphWorkbook(workbook: ExcelJS.Workbook, referenceY
       worksheet: tblSalesAmount,
       headerRow: 3,
       dataStartRow: 4,
-      maxCol: tblSalesAmount.columnCount,
+      // Same identity+date+summary structure as tblDelivery_Quantity, and
+      // the same "CHECK" scratch column (all leftover 0s) sits between
+      // Inventory and the sheet's true trailing blanks, so a simple
+      // trailing-blank scan would stop too early — locate "Inventory" by
+      // name instead.
+      maxCol: findHeaderColumn(tblSalesAmount, 3, "Inventory") ?? tblSalesAmount.columnCount,
     }),
     importComputedSheet({
       sourceFile: "JSCPH",
@@ -453,7 +459,7 @@ export async function importJscphWorkbook(workbook: ExcelJS.Workbook, referenceY
       worksheet: spqCheck,
       headerRow: 3,
       dataStartRow: 4,
-      maxCol: spqCheck.columnCount,
+      maxCol: findHeaderColumn(spqCheck, 3, "Inventory") ?? spqCheck.columnCount,
     }),
     importComputedSheet({
       sourceFile: "JSCPH",
@@ -461,7 +467,7 @@ export async function importJscphWorkbook(workbook: ExcelJS.Workbook, referenceY
       worksheet: stockRatioResin,
       headerRow: 10,
       dataStartRow: 11,
-      maxCol: stockRatioResin.columnCount,
+      maxCol: trimTrailingBlankColumns(stockRatioResin, 10),
     }),
     importComputedSheet({
       sourceFile: "JSCPH",
@@ -469,7 +475,7 @@ export async function importJscphWorkbook(workbook: ExcelJS.Workbook, referenceY
       worksheet: runningStockResin,
       headerRow: 2,
       dataStartRow: 4,
-      maxCol: runningStockResin.columnCount,
+      maxCol: trimTrailingBlankColumns(runningStockResin, 2),
     }),
     importComputedSheet({
       sourceFile: "JSCPH",
@@ -477,7 +483,7 @@ export async function importJscphWorkbook(workbook: ExcelJS.Workbook, referenceY
       worksheet: poPriceMaster,
       headerRow: 3,
       dataStartRow: 4,
-      maxCol: poPriceMaster.columnCount,
+      maxCol: trimTrailingBlankColumns(poPriceMaster, 3),
     }),
     importComputedSheet({
       sourceFile: "JSCPH",
@@ -485,6 +491,9 @@ export async function importJscphWorkbook(workbook: ExcelJS.Workbook, referenceY
       worksheet: forecastCalq,
       headerRow: 3,
       dataStartRow: 4,
+      // Deliberately NOT trimmed — column 52 has no header label but does
+      // carry real per-part figures (verified by hand against the source
+      // file), unlike every other sheet's trailing columns here.
       maxCol: forecastCalq.columnCount,
     }),
     importComputedSheet({
@@ -507,7 +516,7 @@ export async function importJscphWorkbook(workbook: ExcelJS.Workbook, referenceY
       worksheet: sepFct,
       headerRow: 2,
       dataStartRow: 3,
-      maxCol: sepFct.columnCount,
+      maxCol: trimTrailingBlankColumns(sepFct, 2),
     }),
     importComputedSheet({
       sourceFile: "JSCPH",
@@ -515,7 +524,7 @@ export async function importJscphWorkbook(workbook: ExcelJS.Workbook, referenceY
       worksheet: sepDs,
       headerRow: 5,
       dataStartRow: 6,
-      maxCol: sepDs.columnCount,
+      maxCol: trimTrailingBlankColumns(sepDs, 5),
     }),
   ]);
 

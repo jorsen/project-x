@@ -65,6 +65,26 @@ export function findHeaderColumn(
   return null;
 }
 
+/** Returns the last column in the header row that has a real (non-blank,
+ * non-zero) label, scanning backward from the worksheet's raw column count.
+ * Several computed sheets have a run of genuinely unused trailing columns
+ * past their real table — blank headers, sometimes with leftover 0/#N/A
+ * formula noise in the data rows — that would otherwise show up as ugly
+ * "colN" columns. Only safe for sheets where the *tail* is unused: a sheet
+ * that has real data hiding under a blank-headered column (checked by hand
+ * per sheet, e.g. Forecast_CALQ) must not use this and should keep its raw
+ * column count instead. */
+export function trimTrailingBlankColumns(worksheet: ExcelJS.Worksheet, headerRow: number): number {
+  const row = worksheet.getRow(headerRow);
+  for (let col = worksheet.columnCount; col >= 1; col--) {
+    const value = cellValue(row.getCell(col));
+    const isBlankLike =
+      value === null || value === undefined || value === "" || value === 0;
+    if (!isBlankLike) return col;
+  }
+  return worksheet.columnCount;
+}
+
 /** Strips null/undefined keys so a Prisma `update` only touches fields that
  * actually have a new value, letting repeated imports from different sheets
  * progressively enrich a shared record without clobbering existing data. */

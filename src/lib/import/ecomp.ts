@@ -7,6 +7,7 @@ import {
   toDate,
   emptyCounts,
   bulkUpsertChildren,
+  trimTrailingBlankColumns,
   type ImportCounts,
 } from "./utils";
 import { importComputedSheet } from "./computed";
@@ -310,7 +311,7 @@ export async function importEcompWorkbook(workbook: ExcelJS.Workbook) {
       worksheet: trend,
       headerRow: 7,
       dataStartRow: 8,
-      maxCol: trend.columnCount,
+      maxCol: trimTrailingBlankColumns(trend, 7),
     }),
     importComputedSheet({
       sourceFile: "ECOMP",
@@ -318,7 +319,7 @@ export async function importEcompWorkbook(workbook: ExcelJS.Workbook) {
       worksheet: openPoSupplier,
       headerRow: 7,
       dataStartRow: 8,
-      maxCol: openPoSupplier.columnCount,
+      maxCol: trimTrailingBlankColumns(openPoSupplier, 7),
     }),
     importComputedSheet({
       sourceFile: "ECOMP",
@@ -326,7 +327,7 @@ export async function importEcompWorkbook(workbook: ExcelJS.Workbook) {
       worksheet: openPoAmount,
       headerRow: 7,
       dataStartRow: 8,
-      maxCol: openPoAmount.columnCount,
+      maxCol: trimTrailingBlankColumns(openPoAmount, 7),
     }),
   ]);
 
