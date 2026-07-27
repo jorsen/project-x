@@ -90,6 +90,49 @@ export function emptyCounts(): ImportCounts {
   return { created: 0, updated: 0, unchanged: 0, skipped: 0 };
 }
 
+/** Generic bulk-upsert for a table keyed by a natural key: one bulk
+ * createMany() for rows that don't exist yet (a single round-trip no matter
+ * how many rows), concurrent individual update() calls only for the ones
+ * that do. Doing a network round-trip per row was what pushed imports past
+ * Vercel's function timeout with hundreds/thousands of rows per sheet. */
+export async function bulkUpsertChildren<TJob, TWhere>(opts: {
+  jobs: TJob[];
+  keyOf: (job: TJob) => string;
+  existingKeys: Set<string>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- bridges
+  // to whichever Prisma model's own strictly-typed createMany/update
+  // methods the caller passes in; a shared generic helper can't unify
+  // those per-model input types without excessive per-call-site generics.
+  createData: (job: TJob) => any;
+  updateWhere: (job: TJob) => TWhere;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  updateData: (job: TJob) => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  createMany: (data: any[]) => Promise<unknown>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  update: (args: { where: TWhere; data: any }) => Promise<unknown>;
+}): Promise<ImportCounts> {
+  const counts = emptyCounts();
+  if (opts.jobs.length === 0) return counts;
+
+  const toCreate = opts.jobs.filter((j) => !opts.existingKeys.has(opts.keyOf(j)));
+  const toUpdate = opts.jobs.filter((j) => opts.existingKeys.has(opts.keyOf(j)));
+
+  if (toCreate.length > 0) {
+    await opts.createMany(toCreate.map(opts.createData));
+    counts.created += toCreate.length;
+  }
+
+  await Promise.all(
+    toUpdate.map(async (j) => {
+      await opts.update({ where: opts.updateWhere(j), data: opts.updateData(j) });
+      counts.updated++;
+    }),
+  );
+
+  return counts;
+}
+
 export interface ImportSummary {
   sourceFile: string;
   fileName: string;
