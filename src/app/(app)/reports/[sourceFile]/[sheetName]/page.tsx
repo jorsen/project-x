@@ -1,13 +1,5 @@
 import Link from "next/link";
-import {
-  ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
-  Inbox,
-  Table2,
-  CalendarDays,
-  LayoutGrid,
-} from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Inbox, Table2, CalendarDays } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -118,12 +110,16 @@ export default async function ComputedSheetPage({
     : [];
   const hasCategory = hasCalendar && categories.length > 0;
 
-  const view =
-    viewParam === "calendar" && hasCalendar
+  // Category-enabled sheets (CODE + dates) skip Table/Calendar as separate
+  // modes entirely — By Category is the whole experience, and Calendar is
+  // reached only by clicking a part name from that list, not a top-level tab.
+  const view = hasCategory
+    ? viewParam === "calendar" && hasCalendar
       ? "calendar"
-      : viewParam === "category" && hasCategory
-        ? "category"
-        : "table";
+      : "category"
+    : viewParam === "calendar" && hasCalendar
+      ? "calendar"
+      : "table";
   // Once a report has a Calendar view, the daily values live there —
   // the flat table only needs the identity/summary columns to stay readable.
   const tableColumns = hasCalendar ? columns.filter((c) => !isDateColumn(c)) : columns;
@@ -131,11 +127,12 @@ export default async function ComputedSheetPage({
   const csvHref = `/api/reports/${encodeURIComponent(sourceFile)}/${encodeURIComponent(sheetName)}/csv`;
   const baseParams = { q, row: rowParam, month: monthParam, category: categoryParam };
 
-  const viewTabs = [
-    { value: "table", label: "Table", icon: Table2 },
-    ...(hasCalendar ? [{ value: "calendar", label: "Calendar", icon: CalendarDays }] : []),
-    ...(hasCategory ? [{ value: "category", label: "By Category", icon: LayoutGrid }] : []),
-  ];
+  const viewTabs = hasCategory
+    ? []
+    : [
+        { value: "table", label: "Table", icon: Table2 },
+        ...(hasCalendar ? [{ value: "calendar", label: "Calendar", icon: CalendarDays }] : []),
+      ];
 
   return (
     <div>
@@ -273,6 +270,15 @@ function CalendarView({
 
   return (
     <div className="space-y-6">
+      {baseParams.category && (
+        <Link
+          href={withParams(baseParams, { view: "category", row: undefined, month: undefined })}
+          className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-slate-700"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to {baseParams.category} parts
+        </Link>
+      )}
+
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700">Part</label>
         <RowSelect options={options} />
@@ -466,7 +472,7 @@ function CategoryView({
                           href={withParams(baseParams, {
                             view: "calendar",
                             row: row.id,
-                            category: undefined,
+                            category: selectedCategory,
                           })}
                           className="block px-4 py-2.5 font-medium text-indigo-600 hover:underline"
                           title="View this part's delivery calendar"
