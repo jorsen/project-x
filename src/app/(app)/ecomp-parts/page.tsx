@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Form from "next/form";
 import { Pencil, Boxes } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -52,9 +51,9 @@ export default async function EcompPartsPage({
 
       <FlashBanner message={flash} />
 
-      <Form action="" className="mb-4 flex gap-2">
-        <SearchInput defaultValue={q} placeholder="Search ICS, part number, category, maker..." />
-      </Form>
+      <div className="mb-4 flex gap-2">
+        <SearchInput placeholder="Search ICS, part number, category, maker..." />
+      </div>
 
       {parts.length === 0 ? (
         <EmptyState

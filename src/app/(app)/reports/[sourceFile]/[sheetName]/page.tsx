@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Form from "next/form";
 import { ArrowLeft, Inbox } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
@@ -85,9 +84,9 @@ export default async function ComputedSheetPage({
         }
       />
 
-      <Form action="" className="mb-4 flex gap-2">
-        <SearchInput defaultValue={q} placeholder="Search this report..." />
-      </Form>
+      <div className="mb-4 flex gap-2">
+        <SearchInput placeholder="Search this report..." />
+      </div>
 
       {allRows.length === 0 ? (
         <EmptyState icon={Inbox} title="No rows found for this sheet." />

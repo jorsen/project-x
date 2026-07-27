@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Form from "next/form";
 import { BarChart3 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -45,9 +44,9 @@ export default async function ReportsPage({
         />
       ) : (
         <>
-          <Form action="" className="mb-4 flex gap-2">
-            <SearchInput defaultValue={q} placeholder="Search reports by sheet name..." />
-          </Form>
+          <div className="mb-4 flex gap-2">
+            <SearchInput placeholder="Search reports by sheet name..." />
+          </div>
           {groups.length === 0 && (
             <EmptyState icon={BarChart3} title="No reports match your search." />
           )}
