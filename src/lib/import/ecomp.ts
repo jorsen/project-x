@@ -2,6 +2,7 @@ import type ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
 import { cellValue, toStr, toNum, toDate, emptyCounts, type ImportCounts } from "./utils";
 import { importComputedSheet } from "./computed";
+import { crossedIntoNegative, notifyNegativeStockBatch, type NegativeStockItem } from "@/lib/discord";
 
 // --- Receiving_Report: fully flat, no formulas at all. Header row 1, data row 2+.
 async function importReceivingReport(ws: ExcelJS.Worksheet): Promise<ImportCounts> {
@@ -48,9 +49,10 @@ async function importReceivingReport(ws: ExcelJS.Worksheet): Promise<ImportCount
 // across all parts, not per-row.
 async function importTrend(
   ws: ExcelJS.Worksheet,
-): Promise<{ parts: ImportCounts; demands: ImportCounts }> {
+): Promise<{ parts: ImportCounts; demands: ImportCounts; newlyNegative: NegativeStockItem[] }> {
   const parts = emptyCounts();
   const demands = emptyCounts();
+  const newlyNegative: NegativeStockItem[] = [];
 
   const inventoryAsOf = toDate(cellValue(ws.getRow(6).getCell("M")));
   const headerRow = ws.getRow(7);
@@ -79,6 +81,10 @@ async function importTrend(
     if (existing) parts.updated++;
     else parts.created++;
 
+    if (crossedIntoNegative(existing?.inventoryQty, data.inventoryQty)) {
+      newlyNegative.push({ partLabel: ics, field: "Inventory Qty", qty: data.inventoryQty! });
+    }
+
     for (let i = 0; i < demandCols.length; i++) {
       const qty = toNum(cellValue(row.getCell(demandCols[i])));
       if (qty === null) continue;
@@ -96,7 +102,7 @@ async function importTrend(
     }
   }
 
-  return { parts, demands };
+  return { parts, demands, newlyNegative };
 }
 
 // --- Open_PO_Supplier / Open_PO_Amount: header row 7, data row 8+. Columns A-E
@@ -170,6 +176,8 @@ export async function importEcompWorkbook(workbook: ExcelJS.Workbook) {
   const trendResult = await importTrend(trend);
   const supplierResult = await importOpenPoSheet(openPoSupplier, "SUPPLIER");
   const amountResult = await importOpenPoSheet(openPoAmount, "AMOUNT");
+
+  await notifyNegativeStockBatch("ECOMP", trendResult.newlyNegative);
 
   // Full "as imported" snapshots for every sheet — including the columns
   // already captured as raw/editable fields above — so the Reports section

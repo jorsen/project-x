@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireEditor } from "@/lib/authz";
 import { parseDateInput, parseNumberInput, parseTextInput } from "@/lib/format";
 import { logActivity, diffFields } from "@/lib/activity";
+import { notifyNegativeStock, crossedIntoNegative } from "@/lib/discord";
 
 const FIELDS = ["no", "partNumber", "category", "ics", "maker", "inventoryQty", "inventoryAsOf"];
 const DEMAND_FIELDS = ["customerCode", "qty"];
@@ -35,6 +36,14 @@ export async function createEcompPart(formData: FormData) {
     entityLabel: data.ics,
     changes: diffFields(null, data, FIELDS),
   });
+  if (crossedIntoNegative(null, data.inventoryQty)) {
+    await notifyNegativeStock({
+      system: "ECOMP",
+      partLabel: data.ics,
+      field: "Inventory Qty",
+      qty: data.inventoryQty!,
+    });
+  }
   revalidatePath("/ecomp-parts");
   redirect("/ecomp-parts?flash=Record created");
 }
@@ -56,6 +65,14 @@ export async function updateEcompPart(id: string, formData: FormData) {
     entityLabel: data.ics,
     changes: diffFields(before, data, FIELDS),
   });
+  if (crossedIntoNegative(before?.inventoryQty, data.inventoryQty)) {
+    await notifyNegativeStock({
+      system: "ECOMP",
+      partLabel: data.ics,
+      field: "Inventory Qty",
+      qty: data.inventoryQty!,
+    });
+  }
   revalidatePath("/ecomp-parts");
   redirect("/ecomp-parts?flash=Record updated");
 }

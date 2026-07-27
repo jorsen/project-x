@@ -2,6 +2,7 @@ import type ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
 import { cellValue, toStr, toNum, toDate, compact, emptyCounts, type ImportCounts } from "./utils";
 import { importComputedSheet } from "./computed";
+import { crossedIntoNegative, notifyNegativeStockBatch, type NegativeStockItem } from "@/lib/discord";
 
 const MONTH_ABBR = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
@@ -104,9 +105,10 @@ async function importForecastCalqIdentity(ws: ExcelJS.Worksheet): Promise<Import
 // (the per-day columns are formula pulls from SEP DS and are not imported here).
 async function importTblDeliveryQuantity(
   ws: ExcelJS.Worksheet,
-): Promise<{ parts: ImportCounts; adjustments: ImportCounts }> {
+): Promise<{ parts: ImportCounts; adjustments: ImportCounts; newlyNegative: NegativeStockItem[] }> {
   const parts = emptyCounts();
   const adjustments = emptyCounts();
+  const newlyNegative: NegativeStockItem[] = [];
   const lastRow = ws.rowCount;
 
   for (let r = 4; r <= lastRow; r++) {
@@ -135,10 +137,14 @@ async function importTblDeliveryQuantity(
       });
       if (existingAdj) adjustments.updated++;
       else adjustments.created++;
+
+      if (crossedIntoNegative(existingAdj?.boh, boh)) {
+        newlyNegative.push({ partLabel: code, field: "BOH", qty: boh! });
+      }
     }
   }
 
-  return { parts, adjustments };
+  return { parts, adjustments, newlyNegative };
 }
 
 // --- SEP FCT: header row 2 has bare month abbreviations (no year) starting at
@@ -262,6 +268,8 @@ export async function importJscphWorkbook(workbook: ExcelJS.Workbook, referenceY
   const deliveryResult = await importTblDeliveryQuantity(tblDeliveryQuantity);
   const forecastUsage = await importSepFct(sepFct, referenceYear);
   const dailyDelivery = await importSepDs(sepDs);
+
+  await notifyNegativeStockBatch("JSCPH", deliveryResult.newlyNegative);
 
   const computedSheets: Record<string, number> = {};
   computedSheets["tbl_SalesAmount"] = await importComputedSheet({

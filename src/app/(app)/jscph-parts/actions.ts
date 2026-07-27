@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireEditor } from "@/lib/authz";
 import { parseDateInput, parseNumberInput, parseTextInput } from "@/lib/format";
 import { logActivity, diffFields } from "@/lib/activity";
+import { notifyNegativeStock, crossedIntoNegative } from "@/lib/discord";
 
 const PART_FIELDS = [
   "code",
@@ -283,5 +284,8 @@ export async function upsertDeliveryAdjustment(partId: string, formData: FormDat
     entityLabel: code,
     changes: diffFields(before, data, ADJUSTMENT_FIELDS),
   });
+  if (crossedIntoNegative(before?.boh, boh)) {
+    await notifyNegativeStock({ system: "JSCPH", partLabel: code, field: "BOH", qty: boh! });
+  }
   revalidatePath(`/jscph-parts/${partId}`);
 }
