@@ -154,19 +154,18 @@ export function AppShell({
         </div>
       </aside>
 
-      {collapsed && (
-        <button
-          type="button"
-          onClick={toggleCollapsed}
-          className="fixed top-4 left-4 z-30 hidden rounded-md border border-slate-200 bg-white p-2 text-slate-500 shadow-sm hover:bg-slate-50 md:flex"
-          aria-label="Show sidebar"
-          title="Show sidebar"
-        >
-          <PanelLeftOpen className="h-4 w-4" />
-        </button>
-      )}
-
       <main className="min-w-0 flex-1 overflow-x-auto p-4 sm:p-6 md:p-8">
+        {collapsed && (
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            className="mb-4 hidden items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-600 shadow-sm hover:bg-slate-50 md:inline-flex"
+            aria-label="Show sidebar"
+            title="Show sidebar"
+          >
+            <PanelLeftOpen className="h-4 w-4" /> Show sidebar
+          </button>
+        )}
         <div className="mx-auto max-w-[1600px]">{children}</div>
       </main>
     </div>
