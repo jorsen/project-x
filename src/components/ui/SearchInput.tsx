@@ -15,10 +15,20 @@ export function SearchInput({ placeholder }: { placeholder: string }) {
   const urlQuery = searchParams.get("q") ?? "";
   const [value, setValue] = useState(urlQuery);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Tracks the last value *this input* pushed to the URL, so the sync effect
+  // below can tell "the URL changed because our own debounced update landed"
+  // (ignore — `value` is already newer) apart from "the URL changed for some
+  // other reason, like back/forward or a Pagination link" (do sync). Without
+  // this, a debounced update resolving while the user keeps typing would
+  // snap the field back to the stale value mid-keystroke, which is what
+  // made typing feel laggy/broken.
+  const lastPushedRef = useRef(urlQuery);
 
-  // Keep the field in sync if the URL changes from elsewhere (e.g. back/forward).
   useEffect(() => {
-    setValue(urlQuery);
+    if (urlQuery !== lastPushedRef.current) {
+      setValue(urlQuery);
+      lastPushedRef.current = urlQuery;
+    }
   }, [urlQuery]);
 
   useEffect(() => {
@@ -39,6 +49,7 @@ export function SearchInput({ placeholder }: { placeholder: string }) {
       // A new search invalidates the old page's offset.
       params.delete("skip");
 
+      lastPushedRef.current = next;
       const query = params.toString();
       startTransition(() => {
         router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
