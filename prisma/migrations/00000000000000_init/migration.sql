@@ -188,19 +188,6 @@ CREATE TABLE "ImportRun" (
     CONSTRAINT "ImportRun_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "ActivityLog" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT,
-    "userName" TEXT NOT NULL,
-    "action" TEXT NOT NULL,
-    "entityType" TEXT NOT NULL,
-    "entityLabel" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "ActivityLog_pkey" PRIMARY KEY ("id")
-);
-
 -- CreateIndex
 CREATE UNIQUE INDEX "User_employeeNumber_key" ON "User"("employeeNumber");
 
@@ -239,9 +226,6 @@ CREATE UNIQUE INDEX "DeliveryAdjustment_partId_key" ON "DeliveryAdjustment"("par
 
 -- CreateIndex
 CREATE INDEX "ComputedSheetSnapshot_sourceFile_sheetName_idx" ON "ComputedSheetSnapshot"("sourceFile", "sheetName");
-
--- CreateIndex
-CREATE INDEX "ActivityLog_createdAt_idx" ON "ActivityLog"("createdAt");
 
 -- AddForeignKey
 ALTER TABLE "EcompCustomerDemand" ADD CONSTRAINT "EcompCustomerDemand_partId_fkey" FOREIGN KEY ("partId") REFERENCES "EcompPart"("id") ON DELETE CASCADE ON UPDATE CASCADE;
