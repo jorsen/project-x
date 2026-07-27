@@ -1,16 +1,33 @@
 import Link from "next/link";
+import Form from "next/form";
 import { BarChart3 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LinkButton } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { SearchInput } from "@/components/ui/SearchInput";
 
-export default async function ReportsPage() {
-  const groups = await prisma.computedSheetSnapshot.groupBy({
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
+
+  const allGroups = await prisma.computedSheetSnapshot.groupBy({
     by: ["sourceFile", "sheetName"],
     _count: true,
     orderBy: [{ sourceFile: "asc" }, { sheetName: "asc" }],
   });
+
+  const query = q?.trim().toLowerCase();
+  const groups = query
+    ? allGroups.filter(
+        (g) =>
+          g.sheetName.toLowerCase().includes(query) ||
+          g.sourceFile.toLowerCase().includes(query),
+      )
+    : allGroups;
 
   return (
     <div>
@@ -19,7 +36,7 @@ export default async function ReportsPage() {
         description="Read-only snapshots of formula-derived sheets from the last import."
       />
 
-      {groups.length === 0 ? (
+      {allGroups.length === 0 ? (
         <EmptyState
           icon={BarChart3}
           title="No computed reports imported yet"
@@ -27,6 +44,17 @@ export default async function ReportsPage() {
           action={<LinkButton href="/import">Go to Import</LinkButton>}
         />
       ) : (
+        <>
+          <Form action="" className="mb-4 flex gap-2">
+            <SearchInput defaultValue={q} placeholder="Search reports by sheet name..." />
+          </Form>
+          {groups.length === 0 && (
+            <EmptyState icon={BarChart3} title="No reports match your search." />
+          )}
+        </>
+      )}
+
+      {groups.length > 0 && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map((g) => (
             <Link

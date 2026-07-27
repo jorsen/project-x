@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Form from "next/form";
 import { Layers } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -51,9 +52,9 @@ export default async function JscphPartsPage({
 
       <FlashBanner message={flash} />
 
-      <form className="mb-4 flex gap-2">
+      <Form action="" className="mb-4 flex gap-2">
         <SearchInput defaultValue={q} placeholder="Search code, ICS1, part name, model name..." />
-      </form>
+      </Form>
 
       {parts.length === 0 ? (
         <EmptyState

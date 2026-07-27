@@ -1,10 +1,12 @@
 import Link from "next/link";
+import Form from "next/form";
 import { ArrowLeft, Inbox } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LinkButton } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { SearchInput } from "@/components/ui/SearchInput";
 import * as t from "@/components/ui/table";
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -34,20 +36,35 @@ function cellValue(data: Prisma.JsonValue, column: string): string {
   return String(value);
 }
 
+function rowMatches(data: Prisma.JsonValue, query: string): boolean {
+  if (!isPlainObject(data)) return false;
+  return Object.values(data).some((value) => {
+    if (value === null || value === undefined) return false;
+    const str = typeof value === "object" ? JSON.stringify(value) : String(value);
+    return str.toLowerCase().includes(query);
+  });
+}
+
 export default async function ComputedSheetPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ sourceFile: string; sheetName: string }>;
+  searchParams: Promise<{ q?: string }>;
 }) {
   const { sourceFile, sheetName } = await params;
+  const { q } = await searchParams;
 
-  const rows = await prisma.computedSheetSnapshot.findMany({
+  const allRows = await prisma.computedSheetSnapshot.findMany({
     where: { sourceFile, sheetName },
     orderBy: { rowIndex: "asc" },
     take: 500,
   });
 
-  const columns = deriveColumns(rows);
+  const query = q?.trim().toLowerCase();
+  const rows = query ? allRows.filter((row) => rowMatches(row.data, query)) : allRows;
+
+  const columns = deriveColumns(allRows);
   const csvHref = `/api/reports/${encodeURIComponent(sourceFile)}/${encodeURIComponent(sheetName)}/csv`;
 
   return (
@@ -60,7 +77,7 @@ export default async function ComputedSheetPage({
       </Link>
       <PageHeader
         title={sheetName}
-        description={`${sourceFile} · ${rows.length} row(s) shown${rows.length === 500 ? " (max 500)" : ""}`}
+        description={`${sourceFile} · ${rows.length} of ${allRows.length} row(s) shown${allRows.length === 500 ? " (max 500)" : ""}`}
         actions={
           <LinkButton href={csvHref} variant="secondary">
             Export CSV
@@ -68,8 +85,14 @@ export default async function ComputedSheetPage({
         }
       />
 
-      {rows.length === 0 ? (
+      <Form action="" className="mb-4 flex gap-2">
+        <SearchInput defaultValue={q} placeholder="Search this report..." />
+      </Form>
+
+      {allRows.length === 0 ? (
         <EmptyState icon={Inbox} title="No rows found for this sheet." />
+      ) : rows.length === 0 ? (
+        <EmptyState icon={Inbox} title="No rows match your search." />
       ) : (
         <div className={t.tableWrap}>
           <table className={t.table}>

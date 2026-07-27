@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Form from "next/form";
 import { ClipboardList, Pencil } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -92,10 +93,10 @@ export default async function OpenPoPage({
           })}
         </div>
 
-        <form className="flex gap-2">
+        <Form action="" className="flex gap-2">
           {sourceSheet && <input type="hidden" name="source" value={sourceSheet} />}
           <SearchInput defaultValue={q} placeholder="Search ICS, part number, category, maker..." />
-        </form>
+        </Form>
       </div>
 
       {records.length === 0 ? (
