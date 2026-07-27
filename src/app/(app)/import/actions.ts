@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireEditor } from "@/lib/authz";
 import { runImport, type SourceFile } from "@/lib/import";
+import { logActivity } from "@/lib/activity";
 
 export interface ImportActionState {
   error: string | null;
@@ -29,6 +30,7 @@ export async function importExcelAction(
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
     const summary = await runImport(sourceFile, file.name, buffer);
+    await logActivity({ action: "IMPORT", entityType: sourceFile, entityLabel: file.name });
     revalidatePath("/reports");
     revalidatePath("/ecomp-parts");
     revalidatePath("/receiving-report");

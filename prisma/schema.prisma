@@ -196,3 +196,17 @@ model ImportRun {
   summary    Json
   importedAt DateTime @default(now())
 }
+
+// --- Activity log --------------------------------------------------------
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  userName    String
+  action      String   // "CREATE" | "UPDATE" | "DELETE" | "IMPORT"
+  entityType  String   // e.g. "ReceivingRecord", "EcompPart", "User", "Import"
+  entityLabel String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+}

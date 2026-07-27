@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireEditor } from "@/lib/authz";
 import { parseNumberInput, parseTextInput } from "@/lib/format";
+import { logActivity } from "@/lib/activity";
 
 function readForm(formData: FormData) {
   return {
@@ -32,6 +33,11 @@ export async function createOpenPoLine(formData: FormData) {
   const data = readForm(formData);
   validate(data);
   await prisma.openPoLine.create({ data: { ...data, ics: data.ics } });
+  await logActivity({
+    action: "CREATE",
+    entityType: "OpenPoLine",
+    entityLabel: `${data.sourceSheet} / ${data.ics}`,
+  });
   revalidatePath("/open-po");
   redirect("/open-po?flash=Record created");
 }
@@ -44,13 +50,23 @@ export async function updateOpenPoLine(id: string, formData: FormData) {
     where: { id },
     data: { ...data, ics: data.ics },
   });
+  await logActivity({
+    action: "UPDATE",
+    entityType: "OpenPoLine",
+    entityLabel: `${data.sourceSheet} / ${data.ics}`,
+  });
   revalidatePath("/open-po");
   redirect("/open-po?flash=Record updated");
 }
 
 export async function deleteOpenPoLine(id: string) {
   await requireEditor();
-  await prisma.openPoLine.delete({ where: { id } });
+  const line = await prisma.openPoLine.delete({ where: { id } });
+  await logActivity({
+    action: "DELETE",
+    entityType: "OpenPoLine",
+    entityLabel: `${line.sourceSheet} / ${line.ics}`,
+  });
   revalidatePath("/open-po");
 }
 
@@ -61,16 +77,32 @@ export async function upsertOpenPoCustomerDemand(lineId: string, formData: FormD
   if (!customerCode) {
     throw new Error("Customer Code is required");
   }
-  await prisma.openPoCustomerDemand.upsert({
-    where: { lineId_customerCode: { lineId, customerCode } },
-    create: { lineId, customerCode, qty },
-    update: { qty },
+  const [line] = await Promise.all([
+    prisma.openPoLine.findUnique({ where: { id: lineId }, select: { ics: true } }),
+    prisma.openPoCustomerDemand.upsert({
+      where: { lineId_customerCode: { lineId, customerCode } },
+      create: { lineId, customerCode, qty },
+      update: { qty },
+    }),
+  ]);
+  await logActivity({
+    action: "UPDATE",
+    entityType: "OpenPoCustomerDemand",
+    entityLabel: `${line?.ics ?? lineId} — ${customerCode}`,
   });
   revalidatePath(`/open-po/${lineId}`);
 }
 
 export async function deleteOpenPoCustomerDemand(id: string) {
   await requireEditor();
-  const demand = await prisma.openPoCustomerDemand.delete({ where: { id } });
+  const demand = await prisma.openPoCustomerDemand.delete({
+    where: { id },
+    include: { line: { select: { ics: true } } },
+  });
+  await logActivity({
+    action: "DELETE",
+    entityType: "OpenPoCustomerDemand",
+    entityLabel: `${demand.line.ics} — ${demand.customerCode}`,
+  });
   revalidatePath(`/open-po/${demand.lineId}`);
 }

@@ -5,7 +5,8 @@ export type NavIconName =
   | "Layers"
   | "BarChart3"
   | "Upload"
-  | "Users";
+  | "Users"
+  | "Activity";
 
 export interface NavItem {
   href: string;
@@ -34,7 +35,10 @@ export const navSections: NavSection[] = [
   },
   {
     heading: "Reference",
-    items: [{ href: "/reports", label: "Computed Reports", icon: "BarChart3" }],
+    items: [
+      { href: "/reports", label: "Computed Reports", icon: "BarChart3" },
+      { href: "/activity", label: "Activity Log", icon: "Activity" },
+    ],
   },
   {
     heading: "Admin",

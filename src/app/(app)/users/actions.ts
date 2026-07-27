@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, type Role } from "@/lib/authz";
 import { parseTextInput } from "@/lib/format";
+import { logActivity } from "@/lib/activity";
 
 const ROLES: Role[] = ["ADMIN", "EDITOR", "VIEWER"];
 
@@ -39,6 +40,11 @@ export async function createUser(formData: FormData) {
     data: { name, employeeNumber, passwordHash, role },
   });
 
+  await logActivity({
+    action: "CREATE",
+    entityType: "User",
+    entityLabel: `${name} (#${employeeNumber})`,
+  });
   revalidatePath("/users");
   redirect("/users?flash=User created");
 }
@@ -48,11 +54,16 @@ export async function updateUserRole(id: string, formData: FormData) {
 
   const role = parseRole(formData.get("role"));
 
-  await prisma.user.update({
+  const user = await prisma.user.update({
     where: { id },
     data: { role },
   });
 
+  await logActivity({
+    action: "UPDATE",
+    entityType: "User",
+    entityLabel: `${user.name} (#${user.employeeNumber}) → ${role}`,
+  });
   revalidatePath("/users");
   redirect("/users?flash=Role updated");
 }
@@ -67,11 +78,16 @@ export async function resetUserPassword(id: string, formData: FormData) {
 
   const passwordHash = await bcrypt.hash(password, 10);
 
-  await prisma.user.update({
+  const user = await prisma.user.update({
     where: { id },
     data: { passwordHash },
   });
 
+  await logActivity({
+    action: "UPDATE",
+    entityType: "User",
+    entityLabel: `Password reset for ${user.name} (#${user.employeeNumber})`,
+  });
   revalidatePath("/users");
   redirect("/users?flash=Password reset");
 }
@@ -84,6 +100,11 @@ export async function deleteUser(id: string) {
     throw new Error("You cannot delete your own account");
   }
 
-  await prisma.user.delete({ where: { id } });
+  const user = await prisma.user.delete({ where: { id } });
+  await logActivity({
+    action: "DELETE",
+    entityType: "User",
+    entityLabel: `${user.name} (#${user.employeeNumber})`,
+  });
   revalidatePath("/users");
 }

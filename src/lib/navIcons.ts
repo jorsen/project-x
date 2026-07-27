@@ -6,6 +6,7 @@ import {
   BarChart3,
   Upload,
   Users,
+  Activity,
   type LucideIcon,
 } from "lucide-react";
 import type { NavIconName } from "./nav";
@@ -21,4 +22,5 @@ export const navIcons: Record<NavIconName, LucideIcon> = {
   BarChart3,
   Upload,
   Users,
+  Activity,
 };

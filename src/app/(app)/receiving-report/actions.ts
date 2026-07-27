@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireEditor } from "@/lib/authz";
 import { parseDateInput, parseIntInput, parseNumberInput, parseTextInput } from "@/lib/format";
+import { logActivity } from "@/lib/activity";
 
 function readForm(formData: FormData) {
   return {
@@ -31,6 +32,7 @@ export async function createReceivingRecord(formData: FormData) {
     throw new Error("No. and ICS are required");
   }
   await prisma.receivingRecord.create({ data: { ...data, no: data.no, ics: data.ics } });
+  await logActivity({ action: "CREATE", entityType: "ReceivingRecord", entityLabel: data.ics });
   revalidatePath("/receiving-report");
   redirect("/receiving-report?flash=Record created");
 }
@@ -45,12 +47,14 @@ export async function updateReceivingRecord(id: string, formData: FormData) {
     where: { id },
     data: { ...data, no: data.no, ics: data.ics },
   });
+  await logActivity({ action: "UPDATE", entityType: "ReceivingRecord", entityLabel: data.ics });
   revalidatePath("/receiving-report");
   redirect("/receiving-report?flash=Record updated");
 }
 
 export async function deleteReceivingRecord(id: string) {
   await requireEditor();
-  await prisma.receivingRecord.delete({ where: { id } });
+  const record = await prisma.receivingRecord.delete({ where: { id } });
+  await logActivity({ action: "DELETE", entityType: "ReceivingRecord", entityLabel: record.ics });
   revalidatePath("/receiving-report");
 }
