@@ -7,6 +7,24 @@ function jsonSafe(value: unknown): unknown {
   return value;
 }
 
+// Some sheets embed subtotal/grand-total rows (e.g. tblDelivery_Quantity has
+// "SubTotal1/2/3" and "GTL" rows mixed into the data range, with the label
+// stuffed into an unrelated column like "Incoming A") — these have real
+// numbers but no identity, and would otherwise show up as phantom "parts".
+// When a sheet has at least one identifier-shaped column, a row needs a
+// value in one of them to count as real data; sheets with none of these
+// columns keep the original any-non-blank-cell behavior unchanged.
+const IDENTIFIER_LABELS = new Set([
+  "CODE",
+  "ICS1",
+  "ICS",
+  "ITEM NUMBER",
+  "PART NAME",
+  "PART NUMBER",
+  "ITEM NAME",
+  "MATERIAL NAME",
+]);
+
 /**
  * Generic importer for sheets that are entirely formula-derived output
  * (no raw/editable columns at all). Dumps every non-blank row into
@@ -46,6 +64,10 @@ export async function importComputedSheet(opts: {
     labels[col] = label;
   }
 
+  const identifierLabels = [...usedLabels].filter((label) =>
+    IDENTIFIER_LABELS.has(label.trim().toUpperCase()),
+  );
+
   const rows: { rowIndex: number; data: Record<string, unknown> }[] = [];
   const lastRow = Math.max(worksheet.rowCount, dataStartRow);
 
@@ -60,7 +82,14 @@ export async function importComputedSheet(opts: {
       data[labels[col]] = value;
     }
 
-    if (hasValue) {
+    const hasIdentifier =
+      identifierLabels.length === 0 ||
+      identifierLabels.some((label) => {
+        const v = data[label];
+        return v !== null && v !== undefined && v !== "";
+      });
+
+    if (hasValue && hasIdentifier) {
       rows.push({ rowIndex: rowNum, data });
     }
   }

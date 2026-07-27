@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { ArrowLeft, ChevronLeft, ChevronRight, Inbox, Table2, CalendarDays } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Inbox,
+  Table2,
+  CalendarDays,
+  LayoutGrid,
+} from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -72,15 +80,23 @@ function withParams(
   return qs ? `?${qs}` : "";
 }
 
+const CODE_COLUMN = "CODE";
+
 export default async function ComputedSheetPage({
   params,
   searchParams,
 }: {
   params: Promise<{ sourceFile: string; sheetName: string }>;
-  searchParams: Promise<{ q?: string; view?: string; row?: string; month?: string }>;
+  searchParams: Promise<{ q?: string; view?: string; row?: string; month?: string; category?: string }>;
 }) {
   const { sourceFile, sheetName } = await params;
-  const { q, view: viewParam, row: rowParam, month: monthParam } = await searchParams;
+  const {
+    q,
+    view: viewParam,
+    row: rowParam,
+    month: monthParam,
+    category: categoryParam,
+  } = await searchParams;
 
   const allRows = await prisma.computedSheetSnapshot.findMany({
     where: { sourceFile, sheetName },
@@ -94,13 +110,30 @@ export default async function ComputedSheetPage({
   const columns = deriveColumns(allRows);
   const dateColumns = columns.filter(isDateColumn).sort();
   const hasCalendar = dateColumns.length > 0;
-  const view = viewParam === "calendar" && hasCalendar ? "calendar" : "table";
+
+  const categories = columns.includes(CODE_COLUMN)
+    ? [...new Set(allRows.map((r) => cellValue(r.data, CODE_COLUMN)).filter(Boolean))].sort()
+    : [];
+  const hasCategory = hasCalendar && categories.length > 0;
+
+  const view =
+    viewParam === "calendar" && hasCalendar
+      ? "calendar"
+      : viewParam === "category" && hasCategory
+        ? "category"
+        : "table";
   // Once a report has a Calendar view, the daily values live there —
   // the flat table only needs the identity/summary columns to stay readable.
   const tableColumns = hasCalendar ? columns.filter((c) => !isDateColumn(c)) : columns;
 
   const csvHref = `/api/reports/${encodeURIComponent(sourceFile)}/${encodeURIComponent(sheetName)}/csv`;
-  const baseParams = { q, row: rowParam, month: monthParam };
+  const baseParams = { q, row: rowParam, month: monthParam, category: categoryParam };
+
+  const viewTabs = [
+    { value: "table", label: "Table", icon: Table2 },
+    ...(hasCalendar ? [{ value: "calendar", label: "Calendar", icon: CalendarDays }] : []),
+    ...(hasCategory ? [{ value: "category", label: "By Category", icon: LayoutGrid }] : []),
+  ];
 
   return (
     <div>
@@ -115,21 +148,24 @@ export default async function ComputedSheetPage({
         description={`${sourceFile} · ${rows.length} of ${allRows.length} row(s) shown${allRows.length === 500 ? " (max 500)" : ""}`}
         actions={
           <div className="flex gap-2">
-            {hasCalendar && (
-              <LinkButton
-                href={withParams(baseParams, { view: view === "table" ? "calendar" : "table" })}
-                variant="secondary"
-              >
-                {view === "table" ? (
-                  <>
-                    <CalendarDays className="h-4 w-4" /> Calendar view
-                  </>
-                ) : (
-                  <>
-                    <Table2 className="h-4 w-4" /> Table view
-                  </>
-                )}
-              </LinkButton>
+            {viewTabs.length > 1 && (
+              <div className="flex overflow-hidden rounded-md border border-slate-300">
+                {viewTabs.map((tab, i) => (
+                  <Link
+                    key={tab.value}
+                    href={withParams(baseParams, { view: tab.value })}
+                    className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium ${
+                      i > 0 ? "border-l border-slate-300" : ""
+                    } ${
+                      view === tab.value
+                        ? "bg-indigo-600 text-white"
+                        : "bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <tab.icon className="h-4 w-4" /> {tab.label}
+                  </Link>
+                ))}
+              </div>
             )}
             <LinkButton href={csvHref} variant="secondary">
               Export CSV
@@ -154,6 +190,15 @@ export default async function ComputedSheetPage({
           rowParam={rowParam}
           monthParam={monthParam}
           baseParams={{ ...baseParams, view: "calendar" }}
+        />
+      ) : view === "category" ? (
+        <CategoryView
+          rows={rows}
+          columns={columns}
+          dateColumns={dateColumns}
+          categories={categories}
+          categoryParam={categoryParam}
+          baseParams={{ ...baseParams, view: "category" }}
         />
       ) : (
         <div className={t.tableWrap}>
@@ -318,6 +363,99 @@ function CalendarView({
               );
             })}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CategoryView({
+  rows,
+  columns,
+  dateColumns,
+  categories,
+  categoryParam,
+  baseParams,
+}: {
+  rows: { id: string; rowIndex: number; data: Prisma.JsonValue }[];
+  columns: string[];
+  dateColumns: string[];
+  categories: string[];
+  categoryParam: string | undefined;
+  baseParams: Record<string, string | undefined>;
+}) {
+  const selectedCategory =
+    categoryParam && categories.includes(categoryParam) ? categoryParam : categories[0];
+
+  const categoryRows = rows.filter((r) => cellValue(r.data, CODE_COLUMN) === selectedCategory);
+
+  // Sum each date column across every row in this category — verified
+  // against the workbook's own SubTotal row for this exact breakdown.
+  const subtotals = new Map<string, number>();
+  for (const col of dateColumns) {
+    let sum = 0;
+    for (const row of categoryRows) {
+      sum += numericCellValue(row.data, col) ?? 0;
+    }
+    subtotals.set(col, sum);
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        {categories.map((c) => (
+          <Link
+            key={c}
+            href={withParams(baseParams, { category: c })}
+            className={`rounded-md px-3.5 py-2 text-sm font-medium ${
+              c === selectedCategory
+                ? "bg-indigo-600 text-white"
+                : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            {c}
+          </Link>
+        ))}
+      </div>
+
+      {categoryRows.length === 0 ? (
+        <EmptyState icon={Inbox} title={`No rows in category "${selectedCategory}".`} />
+      ) : (
+        <div className={t.tableWrap}>
+          <table className={t.table}>
+            <thead className={t.thead}>
+              <tr>
+                <th className={t.thNum}>Row</th>
+                {columns.map((col) => (
+                  <th key={col} className={t.th}>
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className={t.tbody}>
+              {categoryRows.map((row) => (
+                <tr key={row.id} className={t.tr}>
+                  <td className={t.tdNum}>{row.rowIndex}</td>
+                  {columns.map((col) => (
+                    <td key={col} className={t.td}>
+                      {cellValue(row.data, col)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-slate-300 bg-slate-50 font-semibold">
+                <td className={t.tdNum}>—</td>
+                {columns.map((col) => (
+                  <td key={col} className={t.td}>
+                    {subtotals.has(col) ? subtotals.get(col) : ""}
+                  </td>
+                ))}
+              </tr>
+            </tfoot>
+          </table>
         </div>
       )}
     </div>
