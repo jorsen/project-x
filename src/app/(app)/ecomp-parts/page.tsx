@@ -35,7 +35,7 @@ export default async function EcompPartsPage({
     : undefined;
 
   const [parts, total] = await Promise.all([
-    prisma.ecompPart.findMany({ where, orderBy: { ics: "asc" }, skip, take: PAGE_SIZE }),
+    prisma.ecompPart.findMany({ where, orderBy: { no: "asc" }, skip, take: PAGE_SIZE }),
     prisma.ecompPart.count({ where }),
   ]);
 

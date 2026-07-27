@@ -1,6 +1,7 @@
 import type ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
 import { cellValue, toStr, toNum, toDate, emptyCounts, type ImportCounts } from "./utils";
+import { importComputedSheet } from "./computed";
 
 // --- Receiving_Report: fully flat, no formulas at all. Header row 1, data row 2+.
 async function importReceivingReport(ws: ExcelJS.Worksheet): Promise<ImportCounts> {
@@ -170,21 +171,53 @@ export async function importEcompWorkbook(workbook: ExcelJS.Workbook) {
   const supplierResult = await importOpenPoSheet(openPoSupplier, "SUPPLIER");
   const amountResult = await importOpenPoSheet(openPoAmount, "AMOUNT");
 
+  // Full "as imported" snapshots for every sheet — including the columns
+  // already captured as raw/editable fields above — so the Reports section
+  // always mirrors exactly what's in the workbook, formulas included.
+  const computedSheets: Record<string, number> = {};
+  computedSheets["TREND"] = await importComputedSheet({
+    sourceFile: "ECOMP",
+    sheetName: "TREND",
+    worksheet: trend,
+    headerRow: 7,
+    dataStartRow: 8,
+    maxCol: trend.columnCount,
+  });
+  computedSheets["Open_PO_Supplier"] = await importComputedSheet({
+    sourceFile: "ECOMP",
+    sheetName: "Open_PO_Supplier",
+    worksheet: openPoSupplier,
+    headerRow: 7,
+    dataStartRow: 8,
+    maxCol: openPoSupplier.columnCount,
+  });
+  computedSheets["Open_PO_Amount"] = await importComputedSheet({
+    sourceFile: "ECOMP",
+    sheetName: "Open_PO_Amount",
+    worksheet: openPoAmount,
+    headerRow: 7,
+    dataStartRow: 8,
+    maxCol: openPoAmount.columnCount,
+  });
+
   return {
-    ReceivingRecord: receivingCounts,
-    EcompPart: trendResult.parts,
-    EcompCustomerDemand: trendResult.demands,
-    OpenPoLine: {
-      created: supplierResult.lines.created + amountResult.lines.created,
-      updated: supplierResult.lines.updated + amountResult.lines.updated,
-      unchanged: 0,
-      skipped: 0,
+    entities: {
+      ReceivingRecord: receivingCounts,
+      EcompPart: trendResult.parts,
+      EcompCustomerDemand: trendResult.demands,
+      OpenPoLine: {
+        created: supplierResult.lines.created + amountResult.lines.created,
+        updated: supplierResult.lines.updated + amountResult.lines.updated,
+        unchanged: 0,
+        skipped: 0,
+      },
+      OpenPoCustomerDemand: {
+        created: supplierResult.demands.created + amountResult.demands.created,
+        updated: supplierResult.demands.updated + amountResult.demands.updated,
+        unchanged: 0,
+        skipped: 0,
+      },
     },
-    OpenPoCustomerDemand: {
-      created: supplierResult.demands.created + amountResult.demands.created,
-      updated: supplierResult.demands.updated + amountResult.demands.updated,
-      unchanged: 0,
-      skipped: 0,
-    },
+    computedSheets,
   };
 }

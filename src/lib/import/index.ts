@@ -10,7 +10,7 @@ export async function runImport(sourceFile: SourceFile, fileName: string, buffer
 
   const summary =
     sourceFile === "ECOMP"
-      ? { entities: await importEcompWorkbook(workbook), computedSheets: {} as Record<string, number> }
+      ? await importEcompWorkbook(workbook)
       : await importJscphWorkbook(workbook, new Date().getFullYear());
 
   await prisma.importRun.create({

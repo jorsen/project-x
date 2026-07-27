@@ -297,6 +297,52 @@ export async function importJscphWorkbook(workbook: ExcelJS.Workbook, referenceY
     maxCol: runningStockResin.columnCount,
   });
 
+  // Full "as imported" snapshots for the remaining sheets too — including
+  // ones already partially captured as raw/editable fields above — so the
+  // Reports section always mirrors exactly what's in the workbook, formulas
+  // (PO totals, running stock projections, per-month usage/order, etc.)
+  // included, not just the columns we treat as raw/editable.
+  computedSheets["PO_Price_Master"] = await importComputedSheet({
+    sourceFile: "JSCPH",
+    sheetName: "PO_Price_Master",
+    worksheet: poPriceMaster,
+    headerRow: 3,
+    dataStartRow: 4,
+    maxCol: poPriceMaster.columnCount,
+  });
+  computedSheets["Forecast_CALQ"] = await importComputedSheet({
+    sourceFile: "JSCPH",
+    sheetName: "Forecast_CALQ",
+    worksheet: forecastCalq,
+    headerRow: 3,
+    dataStartRow: 4,
+    maxCol: forecastCalq.columnCount,
+  });
+  computedSheets["tblDelivery_Quantity"] = await importComputedSheet({
+    sourceFile: "JSCPH",
+    sheetName: "tblDelivery_Quantity",
+    worksheet: tblDeliveryQuantity,
+    headerRow: 3,
+    dataStartRow: 4,
+    maxCol: tblDeliveryQuantity.columnCount,
+  });
+  computedSheets["SEP FCT"] = await importComputedSheet({
+    sourceFile: "JSCPH",
+    sheetName: "SEP FCT",
+    worksheet: sepFct,
+    headerRow: 2,
+    dataStartRow: 3,
+    maxCol: sepFct.columnCount,
+  });
+  computedSheets["SEP DS"] = await importComputedSheet({
+    sourceFile: "JSCPH",
+    sheetName: "SEP DS",
+    worksheet: sepDs,
+    headerRow: 5,
+    dataStartRow: 6,
+    maxCol: sepDs.columnCount,
+  });
+
   return {
     entities: {
       JscphPart: {

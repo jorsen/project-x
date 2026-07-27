@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { cellValue } from "./utils";
 
 function jsonSafe(value: unknown): unknown {
-  if (value instanceof Date) return value.toISOString();
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString();
   return value;
 }
 
@@ -28,9 +28,22 @@ export async function importComputedSheet(opts: {
 
   const headerCells = worksheet.getRow(headerRow);
   const labels: string[] = [];
+  const usedLabels = new Set<string>();
   for (let col = 1; col <= maxCol; col++) {
-    const label = cellValue(headerCells.getCell(col));
-    labels[col] = label ? String(label).trim() : `col${col}`;
+    const raw = cellValue(headerCells.getCell(col));
+    const isValidDate = raw instanceof Date && !Number.isNaN(raw.getTime());
+    let label = isValidDate
+      ? (raw as Date).toISOString().slice(0, 10)
+      : raw && !(raw instanceof Date)
+        ? String(raw).trim()
+        : "";
+    if (!label) label = `col${col}`;
+    // Header labels become JSON object keys — de-duplicate so two columns
+    // with the same label (or two blank ones) don't silently overwrite
+    // each other's values in a row.
+    if (usedLabels.has(label)) label = `${label} (${col})`;
+    usedLabels.add(label);
+    labels[col] = label;
   }
 
   const rows: { rowIndex: number; data: Record<string, unknown> }[] = [];
