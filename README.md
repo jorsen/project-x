@@ -40,7 +40,13 @@ development.
 1. Create a Neon Postgres database (or via the Vercel Postgres/Neon integration
    from your Vercel project's Storage tab).
 2. In the Vercel project's environment variables, set:
-   - `DATABASE_URL` — the Neon connection string
+   - `DATABASE_URL` — the Neon **pooled** connection string (hostname contains
+     `-pooler`), used for normal app queries.
+   - `DIRECT_DATABASE_URL` — the Neon **unpooled** connection string (same
+     hostname without `-pooler`). Used only by `prisma migrate deploy` — Neon's
+     PgBouncer pooler can multiplex the advisory lock Prisma Migrate takes
+     across sessions, which otherwise surfaces as a `P1002` timeout
+     (`Timed out trying to acquire a postgres advisory lock`) on deploy.
    - `AUTH_SECRET` — a random secret (e.g. `openssl rand -base64 32`)
 3. Deploy. The build (`npm run build`) automatically runs, in order:
    `prisma generate` → `prisma migrate deploy` (applies `prisma/migrations`
