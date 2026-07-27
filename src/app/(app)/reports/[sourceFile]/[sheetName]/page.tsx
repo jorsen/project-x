@@ -427,6 +427,22 @@ function CategoryView({
     PART_NAME_CANDIDATES.includes(c.trim().toUpperCase()),
   );
 
+  // Subtotal every numeric column shown here (SPQ, BOH, Incoming A/B, Scrap,
+  // Forecast, Total Out, Inventory, ...) — text columns (CODE, ICS1, Part
+  // Name, Model Name) stay blank in the footer, same as the workbook's own
+  // SubTotal rows only fill in numeric columns.
+  const numericColumns = tableColumns.filter((col) =>
+    categoryRows.some((r) => numericCellValue(r.data, col) !== null),
+  );
+  const subtotals = new Map<string, number>();
+  for (const col of numericColumns) {
+    let sum = 0;
+    for (const row of categoryRows) {
+      sum += numericCellValue(row.data, col) ?? 0;
+    }
+    subtotals.set(col, sum);
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -494,6 +510,16 @@ function CategoryView({
                 </tr>
               ))}
             </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-slate-300 bg-slate-50 font-semibold">
+                <td className={t.tdNum}>—</td>
+                {tableColumns.map((col) => (
+                  <td key={col} className={t.td}>
+                    {subtotals.has(col) ? subtotals.get(col) : ""}
+                  </td>
+                ))}
+              </tr>
+            </tfoot>
           </table>
         </div>
       )}
