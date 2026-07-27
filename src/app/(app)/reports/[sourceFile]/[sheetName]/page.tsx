@@ -439,11 +439,27 @@ function CategoryView({
               {categoryRows.map((row) => (
                 <tr key={row.id} className={t.tr}>
                   <td className={t.tdNum}>{row.rowIndex}</td>
-                  {columns.map((col) => (
-                    <td key={col} className={t.td}>
-                      {cellValue(row.data, col)}
-                    </td>
-                  ))}
+                  {columns.map((col) =>
+                    isDateColumn(col) ? (
+                      <td key={col} className={`${t.td} p-0`}>
+                        <Link
+                          href={withParams(baseParams, {
+                            view: "calendar",
+                            row: row.id,
+                            month: monthKeyOf(col),
+                          })}
+                          className="block px-4 py-2.5 hover:bg-indigo-50 hover:underline"
+                          title={`View ${col} on the calendar for this part`}
+                        >
+                          {cellValue(row.data, col)}
+                        </Link>
+                      </td>
+                    ) : (
+                      <td key={col} className={t.td}>
+                        {cellValue(row.data, col)}
+                      </td>
+                    ),
+                  )}
                 </tr>
               ))}
             </tbody>
