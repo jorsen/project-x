@@ -205,7 +205,10 @@ model ComputedSheetSnapshot {
   sourceFile String   // "ECOMP" | "JSCPH"
   sheetName  String
   rowIndex   Int
-  data       Json
+  // @db.Json (not the jsonb default) because jsonb doesn't preserve object
+  // key order — reports need columns to stay in the sheet's original
+  // left-to-right order, not whatever order jsonb happens to store them in.
+  data       Json     @db.Json
   importedAt DateTime @default(now())
 
   @@index([sourceFile, sheetName])
