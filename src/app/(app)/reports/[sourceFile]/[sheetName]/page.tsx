@@ -73,6 +73,36 @@ function withParams(
 }
 
 const CODE_COLUMN = "CODE";
+const PART_NAME_CANDIDATES = ["PART NAME", "ITEM NAME"];
+
+/** Renders a table cell, turning the Part Name column into a link to that
+ * row's calendar/detail drill-down when one exists — used by both the flat
+ * table view and CategoryView so every report table gets this consistently,
+ * not just category-enabled ones. */
+function renderRowCell(
+  row: { id: string; data: Prisma.JsonValue },
+  col: string,
+  opts: { partNameColumn: string | undefined; linkable: boolean; baseParams: Record<string, string | undefined> },
+) {
+  if (col !== opts.partNameColumn || !opts.linkable) {
+    return (
+      <td key={col} className={t.td}>
+        {cellValue(row.data, col)}
+      </td>
+    );
+  }
+  return (
+    <td key={col} className={`${t.td} p-0`}>
+      <Link
+        href={withParams(opts.baseParams, { view: "calendar", row: row.id })}
+        className="block px-4 py-2.5 font-medium text-indigo-600 hover:underline"
+        title="View this part's detail"
+      >
+        {cellValue(row.data, col)}
+      </Link>
+    </td>
+  );
+}
 
 // --- Forecast_CALQ is a bespoke case: it has a CODE column like
 // tblDelivery_Quantity but no daily date columns — its "detail" data is 7
@@ -213,6 +243,9 @@ export default async function ComputedSheetPage({
     : hasCalendar
       ? columns.filter((c) => !isDateColumn(c))
       : columns;
+  const partNameColumn = tableColumns.find((c) =>
+    PART_NAME_CANDIDATES.includes(c.trim().toUpperCase()),
+  );
 
   const csvHref = `/api/reports/${encodeURIComponent(sourceFile)}/${encodeURIComponent(sheetName)}/csv`;
   const baseParams = { q, row: rowParam, month: monthParam, category: categoryParam };
@@ -291,6 +324,7 @@ export default async function ComputedSheetPage({
         <CategoryView
           rows={rows}
           tableColumns={tableColumns}
+          partNameColumn={partNameColumn}
           categories={categories}
           categoryParam={categoryParam}
           baseParams={{ ...baseParams, view: "category" }}
@@ -312,11 +346,9 @@ export default async function ComputedSheetPage({
               {rows.map((row) => (
                 <tr key={row.id} className={t.tr}>
                   <td className={t.tdNum}>{row.rowIndex}</td>
-                  {tableColumns.map((col) => (
-                    <td key={col} className={t.td}>
-                      {cellValue(row.data, col)}
-                    </td>
-                  ))}
+                  {tableColumns.map((col) =>
+                    renderRowCell(row, col, { partNameColumn, linkable: hasDetail, baseParams }),
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -473,17 +505,17 @@ function CalendarView({
   );
 }
 
-const PART_NAME_CANDIDATES = ["PART NAME", "ITEM NAME"];
-
 function CategoryView({
   rows,
   tableColumns,
+  partNameColumn,
   categories,
   categoryParam,
   baseParams,
 }: {
   rows: { id: string; rowIndex: number; data: Prisma.JsonValue }[];
   tableColumns: string[];
+  partNameColumn: string | undefined;
   categories: string[];
   categoryParam: string | undefined;
   baseParams: Record<string, string | undefined>;
@@ -515,9 +547,6 @@ function CategoryView({
   }
 
   const categoryRows = rows.filter((r) => cellValue(r.data, CODE_COLUMN) === selectedCategory);
-  const partNameColumn = tableColumns.find((c) =>
-    PART_NAME_CANDIDATES.includes(c.trim().toUpperCase()),
-  );
 
   // Subtotal every numeric column shown here (SPQ, BOH, Incoming A/B, Scrap,
   // Forecast, Total Out, Inventory, ...) — text columns (CODE, ICS1, Part
@@ -579,25 +608,7 @@ function CategoryView({
                 <tr key={row.id} className={t.tr}>
                   <td className={t.tdNum}>{row.rowIndex}</td>
                   {tableColumns.map((col) =>
-                    col === partNameColumn ? (
-                      <td key={col} className={`${t.td} p-0`}>
-                        <Link
-                          href={withParams(baseParams, {
-                            view: "calendar",
-                            row: row.id,
-                            category: selectedCategory,
-                          })}
-                          className="block px-4 py-2.5 font-medium text-indigo-600 hover:underline"
-                          title="View this part's delivery calendar"
-                        >
-                          {cellValue(row.data, col)}
-                        </Link>
-                      </td>
-                    ) : (
-                      <td key={col} className={t.td}>
-                        {cellValue(row.data, col)}
-                      </td>
-                    ),
+                    renderRowCell(row, col, { partNameColumn, linkable: true, baseParams }),
                   )}
                 </tr>
               ))}
