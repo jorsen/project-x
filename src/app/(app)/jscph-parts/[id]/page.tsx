@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Button, LinkButton } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import * as t from "@/components/ui/table";
+import { formatNumber } from "@/lib/format";
 import {
   deleteDailyDeliveryQty,
   deleteMonthlyBufferOverride,
@@ -121,19 +122,27 @@ export default async function JscphPartDetailPage({
             <div>
               <dt className="text-xs font-medium text-slate-500">SPQ</dt>
               <dd className="mt-0.5 text-sm text-slate-900">
-                {part.spq ?? <span className="text-slate-300">—</span>}
+                {part.spq !== null ? formatNumber(part.spq) : <span className="text-slate-300">—</span>}
               </dd>
             </div>
             <div>
               <dt className="text-xs font-medium text-slate-500">Unit Price Purchase</dt>
               <dd className="mt-0.5 text-sm text-slate-900">
-                {part.unitPricePurchase ?? <span className="text-slate-300">—</span>}
+                {part.unitPricePurchase !== null ? (
+                  formatNumber(part.unitPricePurchase)
+                ) : (
+                  <span className="text-slate-300">—</span>
+                )}
               </dd>
             </div>
             <div>
               <dt className="text-xs font-medium text-slate-500">Unit Price Sales</dt>
               <dd className="mt-0.5 text-sm text-slate-900">
-                {part.unitPriceSales ?? <span className="text-slate-300">—</span>}
+                {part.unitPriceSales !== null ? (
+                  formatNumber(part.unitPriceSales)
+                ) : (
+                  <span className="text-slate-300">—</span>
+                )}
               </dd>
             </div>
           </dl>
@@ -156,7 +165,7 @@ export default async function JscphPartDetailPage({
                   <tr key={entry.id} className={t.tr}>
                     <td className={`${t.td} font-medium text-slate-900`}>{entry.poNumber}</td>
                     <td className={t.tdNum}>
-                      {entry.qty ?? <span className="text-slate-300">—</span>}
+                      {entry.qty !== null ? formatNumber(entry.qty) : <span className="text-slate-300">—</span>}
                     </td>
                     <td className={t.tdMuted}>{dateValue(entry.updatedAt)}</td>
                     {editable && (
@@ -213,7 +222,11 @@ export default async function JscphPartDetailPage({
                       {monthValue(entry.month)}
                     </td>
                     <td className={t.tdNum}>
-                      {entry.usageQty ?? <span className="text-slate-300">—</span>}
+                      {entry.usageQty !== null ? (
+                        formatNumber(entry.usageQty)
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
                     </td>
                     <td className={t.tdMuted}>{dateValue(entry.updatedAt)}</td>
                     {editable && (
@@ -270,7 +283,7 @@ export default async function JscphPartDetailPage({
                       {dateValue(entry.date)}
                     </td>
                     <td className={t.tdNum}>
-                      {entry.qty ?? <span className="text-slate-300">—</span>}
+                      {entry.qty !== null ? formatNumber(entry.qty) : <span className="text-slate-300">—</span>}
                     </td>
                     <td className={t.tdMuted}>{dateValue(entry.updatedAt)}</td>
                     {editable && (
@@ -327,7 +340,11 @@ export default async function JscphPartDetailPage({
                       {monthValue(entry.month)}
                     </td>
                     <td className={t.tdNum}>
-                      {entry.bufferQty ?? <span className="text-slate-300">—</span>}
+                      {entry.bufferQty !== null ? (
+                        formatNumber(entry.bufferQty)
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
                     </td>
                     <td className={t.tdMuted}>{dateValue(entry.updatedAt)}</td>
                     {editable && (
@@ -404,13 +421,20 @@ export default async function JscphPartDetailPage({
               <div>
                 <dt className="text-xs font-medium text-slate-500">BOH</dt>
                 <dd className="mt-0.5 text-sm text-slate-900">
-                  {part.deliveryAdjustment?.boh ?? <span className="text-slate-300">not set</span>}
+                  {part.deliveryAdjustment?.boh !== undefined && part.deliveryAdjustment?.boh !== null ? (
+                    formatNumber(part.deliveryAdjustment.boh)
+                  ) : (
+                    <span className="text-slate-300">not set</span>
+                  )}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs font-medium text-slate-500">Incoming A</dt>
                 <dd className="mt-0.5 text-sm text-slate-900">
-                  {part.deliveryAdjustment?.incomingA ?? (
+                  {part.deliveryAdjustment?.incomingA !== undefined &&
+                  part.deliveryAdjustment?.incomingA !== null ? (
+                    formatNumber(part.deliveryAdjustment.incomingA)
+                  ) : (
                     <span className="text-slate-300">not set</span>
                   )}
                 </dd>
@@ -418,7 +442,10 @@ export default async function JscphPartDetailPage({
               <div>
                 <dt className="text-xs font-medium text-slate-500">Incoming B</dt>
                 <dd className="mt-0.5 text-sm text-slate-900">
-                  {part.deliveryAdjustment?.incomingB ?? (
+                  {part.deliveryAdjustment?.incomingB !== undefined &&
+                  part.deliveryAdjustment?.incomingB !== null ? (
+                    formatNumber(part.deliveryAdjustment.incomingB)
+                  ) : (
                     <span className="text-slate-300">not set</span>
                   )}
                 </dd>

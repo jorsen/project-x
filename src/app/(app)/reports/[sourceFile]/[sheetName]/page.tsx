@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, ChevronLeft, ChevronRight, Inbox, Table2, CalendarDays } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
+import { formatNumber } from "@/lib/format";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LinkButton } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -40,6 +41,7 @@ function cellValue(data: Prisma.JsonValue, column: string): string {
   if (!isPlainObject(data)) return "";
   const value = data[column];
   if (value === null || value === undefined) return "";
+  if (typeof value === "number") return formatNumber(value);
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
 }
@@ -463,7 +465,7 @@ function CalendarView({
                     value ? "text-slate-900" : "text-slate-300"
                   }`}
                 >
-                  {value ?? "—"}
+                  {formatNumber(value)}
                 </span>
               </div>
             );
@@ -493,7 +495,7 @@ function CalendarView({
                     />
                   </div>
                   <span className="w-16 shrink-0 text-right text-xs font-semibold tabular-nums text-slate-700">
-                    {total}
+                    {formatNumber(total)}
                   </span>
                 </Link>
               );
@@ -618,7 +620,7 @@ function CategoryView({
                 <td className={t.tdNum}>—</td>
                 {tableColumns.map((col) => (
                   <td key={col} className={t.td}>
-                    {subtotals.has(col) ? subtotals.get(col) : ""}
+                    {subtotals.has(col) ? formatNumber(subtotals.get(col)) : ""}
                   </td>
                 ))}
               </tr>

@@ -11,6 +11,7 @@ import { FlashBanner } from "@/components/ui/FlashBanner";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination, PAGE_SIZE, parseSkip } from "@/components/ui/Pagination";
 import * as t from "@/components/ui/table";
+import { formatNumber } from "@/lib/format";
 import { deleteReceivingRecord } from "./actions";
 
 export default async function ReceivingReportPage({
@@ -95,12 +96,18 @@ export default async function ReceivingReportPage({
                     <td className={t.td}>{r.partName ?? <span className="text-slate-300">—</span>}</td>
                     <td className={t.td}>{r.supplier ?? <span className="text-slate-300">—</span>}</td>
                     <td className={t.td}>{r.maker ?? <span className="text-slate-300">—</span>}</td>
-                    <td className={t.tdNum}>{r.price ?? <span className="text-slate-300">—</span>}</td>
+                    <td className={t.tdNum}>
+                      {r.price !== null ? formatNumber(r.price) : <span className="text-slate-300">—</span>}
+                    </td>
                     <td className={t.td}>{r.poNumber ?? <span className="text-slate-300">—</span>}</td>
                     <td className={t.td}>{r.etd?.toISOString().slice(0, 10) ?? <span className="text-slate-300">—</span>}</td>
                     <td className={t.td}>{r.eta?.toISOString().slice(0, 10) ?? <span className="text-slate-300">—</span>}</td>
-                    <td className={t.tdNum}>{r.qty ?? <span className="text-slate-300">—</span>}</td>
-                    <td className={t.tdNum}>{r.inTransit ?? <span className="text-slate-300">—</span>}</td>
+                    <td className={t.tdNum}>
+                      {r.qty !== null ? formatNumber(r.qty) : <span className="text-slate-300">—</span>}
+                    </td>
+                    <td className={t.tdNum}>
+                      {r.inTransit !== null ? formatNumber(r.inTransit) : <span className="text-slate-300">—</span>}
+                    </td>
                     {editable && (
                       <td className={t.tdActions}>
                         <div className="flex items-center justify-end gap-3">

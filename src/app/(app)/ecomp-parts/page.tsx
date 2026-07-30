@@ -11,6 +11,7 @@ import { FlashBanner } from "@/components/ui/FlashBanner";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination, PAGE_SIZE, parseSkip } from "@/components/ui/Pagination";
 import * as t from "@/components/ui/table";
+import { formatNumber } from "@/lib/format";
 import { deleteEcompPart } from "./actions";
 
 export default async function EcompPartsPage({
@@ -93,7 +94,9 @@ export default async function EcompPartsPage({
                     <td className={t.td}>{p.category ?? <span className="text-slate-300">—</span>}</td>
                     <td className={t.td}>{p.ics}</td>
                     <td className={t.td}>{p.maker ?? <span className="text-slate-300">—</span>}</td>
-                    <td className={t.tdNum}>{p.inventoryQty ?? <span className="text-slate-300">—</span>}</td>
+                    <td className={t.tdNum}>
+                      {p.inventoryQty !== null ? formatNumber(p.inventoryQty) : <span className="text-slate-300">—</span>}
+                    </td>
                     <td className={t.td}>
                       {p.inventoryAsOf?.toISOString().slice(0, 10) ?? (
                         <span className="text-slate-300">—</span>

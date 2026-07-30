@@ -41,3 +41,9 @@ export function requireWholeNumber(value: number | null, label: string): number 
   }
   return value;
 }
+
+/** Display formatting only — do not use on values feeding back into inputs. */
+export function formatNumber(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "—";
+  return value.toLocaleString("en-US");
+}

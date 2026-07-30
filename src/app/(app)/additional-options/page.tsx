@@ -11,6 +11,7 @@ import { FlashBanner } from "@/components/ui/FlashBanner";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination, PAGE_SIZE, parseSkip } from "@/components/ui/Pagination";
 import * as t from "@/components/ui/table";
+import { formatNumber } from "@/lib/format";
 import { deleteProduct } from "./actions";
 
 export default async function AdditionalOptionsPage({
@@ -93,15 +94,21 @@ export default async function AdditionalOptionsPage({
                     <td className={t.td}>
                       {p.category ?? <span className="text-slate-300">—</span>}
                     </td>
-                    <td className={t.tdNum}>{p.spq ?? <span className="text-slate-300">—</span>}</td>
                     <td className={t.tdNum}>
-                      {p.delivery ?? <span className="text-slate-300">—</span>}
+                      {p.spq !== null ? formatNumber(p.spq) : <span className="text-slate-300">—</span>}
                     </td>
                     <td className={t.tdNum}>
-                      {p.unitPrice ?? <span className="text-slate-300">—</span>}
+                      {p.delivery !== null ? formatNumber(p.delivery) : <span className="text-slate-300">—</span>}
                     </td>
                     <td className={t.tdNum}>
-                      {p.oldUnitPrice ?? <span className="text-slate-300">—</span>}
+                      {p.unitPrice !== null ? formatNumber(p.unitPrice) : <span className="text-slate-300">—</span>}
+                    </td>
+                    <td className={t.tdNum}>
+                      {p.oldUnitPrice !== null ? (
+                        formatNumber(p.oldUnitPrice)
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
                     </td>
                     {editable && (
                       <td className={t.tdActions}>

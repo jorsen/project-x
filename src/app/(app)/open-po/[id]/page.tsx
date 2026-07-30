@@ -9,6 +9,7 @@ import { Button, LinkButton } from "@/components/ui/Button";
 import { DeleteButton } from "@/components/ui/DeleteButton";
 import { SourceSheetBadge } from "@/components/ui/Badge";
 import * as t from "@/components/ui/table";
+import { formatNumber } from "@/lib/format";
 import { deleteOpenPoCustomerDemand, upsertOpenPoCustomerDemand } from "../actions";
 
 function InfoField({ label, value }: { label: string; value: ReactNode }) {
@@ -54,7 +55,7 @@ export default async function OpenPoLineDetailPage({
         <InfoField label="Category" value={line.category} />
         <InfoField label="ICS" value={line.ics} />
         <InfoField label="Maker" value={line.maker} />
-        <InfoField label="Unit Price" value={line.unitPrice} />
+        <InfoField label="Unit Price" value={line.unitPrice !== null ? formatNumber(line.unitPrice) : null} />
       </div>
 
       <h2 className="mb-3 text-lg font-semibold text-slate-900">Customer Demand</h2>
@@ -73,7 +74,9 @@ export default async function OpenPoLineDetailPage({
             {line.demands.map((d) => (
               <tr key={d.id} className={t.tr}>
                 <td className={`${t.td} font-medium text-slate-900`}>{d.customerCode}</td>
-                <td className={t.tdNum}>{d.qty ?? <span className="text-slate-300">—</span>}</td>
+                <td className={t.tdNum}>
+                  {d.qty !== null ? formatNumber(d.qty) : <span className="text-slate-300">—</span>}
+                </td>
                 <td className={t.td}>{d.updatedAt.toISOString().slice(0, 10)}</td>
                 {editable && (
                   <td className={t.tdActions}>

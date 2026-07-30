@@ -11,6 +11,7 @@ import { FlashBanner } from "@/components/ui/FlashBanner";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination, PAGE_SIZE, parseSkip } from "@/components/ui/Pagination";
 import * as t from "@/components/ui/table";
+import { formatNumber } from "@/lib/format";
 import { deleteJscphPart } from "./actions";
 
 export default async function JscphPartsPage({
@@ -86,12 +87,22 @@ export default async function JscphPartsPage({
                     </td>
                     <td className={t.td}>{p.partName ?? <span className="text-slate-300">—</span>}</td>
                     <td className={t.td}>{p.modelName ?? <span className="text-slate-300">—</span>}</td>
-                    <td className={t.tdNum}>{p.spq ?? <span className="text-slate-300">—</span>}</td>
                     <td className={t.tdNum}>
-                      {p.unitPricePurchase ?? <span className="text-slate-300">—</span>}
+                      {p.spq !== null ? formatNumber(p.spq) : <span className="text-slate-300">—</span>}
                     </td>
                     <td className={t.tdNum}>
-                      {p.unitPriceSales ?? <span className="text-slate-300">—</span>}
+                      {p.unitPricePurchase !== null ? (
+                        formatNumber(p.unitPricePurchase)
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
+                    </td>
+                    <td className={t.tdNum}>
+                      {p.unitPriceSales !== null ? (
+                        formatNumber(p.unitPriceSales)
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
                     </td>
                     <td className={t.tdActions}>
                       <div className="flex items-center justify-end gap-3">

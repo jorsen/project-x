@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination, PAGE_SIZE, parseSkip } from "@/components/ui/Pagination";
 import { SourceSheetBadge } from "@/components/ui/Badge";
 import * as t from "@/components/ui/table";
+import { formatNumber } from "@/lib/format";
 import { deleteOpenPoLine } from "./actions";
 
 const TABS = [
@@ -136,7 +137,9 @@ export default async function OpenPoPage({
                     <td className={t.td}>{r.category ?? <span className="text-slate-300">—</span>}</td>
                     <td className={t.td}>{r.ics}</td>
                     <td className={t.td}>{r.maker ?? <span className="text-slate-300">—</span>}</td>
-                    <td className={t.tdNum}>{r.unitPrice ?? <span className="text-slate-300">—</span>}</td>
+                    <td className={t.tdNum}>
+                      {r.unitPrice !== null ? formatNumber(r.unitPrice) : <span className="text-slate-300">—</span>}
+                    </td>
                     <td className={t.tdActions}>
                       <div className="flex items-center justify-end gap-3">
                         <Link
